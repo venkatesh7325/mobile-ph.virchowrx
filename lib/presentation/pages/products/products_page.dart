@@ -3,69 +3,159 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/constants/app_strings.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_typography.dart';
-import '../../../core/utils/responsive.dart';
-import '../../../domain/entities/product_entity.dart';
 import '../../controllers/cart_controller.dart';
 import '../../controllers/product_controller.dart';
-import '../../widgets/app_card.dart';
-import '../../widgets/app_input.dart';
-import '../../widgets/app_scaffold.dart';
-import '../../widgets/app_states.dart';
 
 class ProductsPage extends StatelessWidget {
   const ProductsPage({super.key});
+
+  // Theme Colors from Image
+  static const Color primaryTeal = Color(0xFF168A7F);
+  static const Color darkGrey = Color(0xFF111827);
+  static const Color mutedText = Color(0xFF6B7280);
 
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<ProductController>();
     final cartController = Get.find<CartController>();
 
-    return AppScaffold(
-      title: AppStrings.products,
-      currentRoute: AppRoutes.products,
+    return Scaffold(
+      backgroundColor: const Color(0xFFF6FBF9),
+      appBar: _buildAppBar(context, cartController),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildHeaderSection(controller),
           _buildSearchBar(controller),
           _buildCategoryFilter(controller),
-          const Divider(height: 1),
+          const SizedBox(height: 16),
           Expanded(
             child: Obx(() {
               if (controller.isLoading.value && controller.products.isEmpty) {
-                return const AppLoadingView();
-              }
-              if (controller.errorMessage.value != null && controller.products.isEmpty) {
-                return AppErrorView(
-                  message: controller.errorMessage.value!,
-                  onRetry: controller.refresh,
-                );
-              }
-              if (controller.filteredProducts.isEmpty) {
-                return const AppEmptyView(
-                  title: AppStrings.noProductsFound,
-                  message: 'Try adjusting your filters or search query',
-                  icon: Icons.search_off,
-                );
+                return const Center(child: CircularProgressIndicator(color: primaryTeal));
               }
               return RefreshIndicator(
                 onRefresh: controller.refresh,
-                child: GridView.builder(
-                  padding: Responsive.pagePadding(context),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: Responsive.gridCrossAxisCount(context),
-                    childAspectRatio: 0.72,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                  ),
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
                   itemCount: controller.filteredProducts.length,
                   itemBuilder: (context, i) {
                     final p = controller.filteredProducts[i];
-                    return _ProductCard(product: p, cartController: cartController);
+                    return _ProductCard(
+                      product: p,
+                      cartController: cartController,
+                      // Mapping colors to match UI screenshot based on index or type
+                      accentColor: _getCardColor(i),
+                    );
                   },
                 ),
               );
             }),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {},
+        backgroundColor: primaryTeal,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(30),
+          side: const BorderSide(color: Color(0xFF0F5A53), width: 3),
+        ),
+        child: const Icon(Icons.headset_mic_outlined, color: Colors.white),
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar(BuildContext context, CartController cartController) {
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      leading: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: InkWell(
+          onTap: () => Navigator.maybePop(context),
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.withOpacity(0.2)),
+              borderRadius: BorderRadius.circular(12),
+              color: Colors.white,
+            ),
+            child: const Icon(Icons.chevron_left, color: primaryTeal),
+          ),
+        ),
+      ),
+      centerTitle: true,
+      title: const Text('Catalog',
+          style: TextStyle(color: darkGrey, fontWeight: FontWeight.bold, fontSize: 18)),
+      actions: [
+        Obx(() => _buildCartAction(cartController.itemCount)),
+      ],
+    );
+  }
+
+  Widget _buildCartAction(int count) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 16.0),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+            ),
+            child: const Icon(Icons.shopping_cart_outlined, color: primaryTeal),
+          ),
+          if (count > 0)
+            Positioned(
+              top: 5, right: 0,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(color: Color(0xFFF27B7B), shape: BoxShape.circle),
+                child: Text('$count', style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+              ),
+            )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderSection(ProductController controller) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(width: 16, height: 1, color: primaryTeal),
+              const SizedBox(width: 8),
+              const Text('CITYMED WHOLESALE',
+                  style: TextStyle(color: primaryTeal, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.2)),
+            ],
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Available', style: TextStyle(fontFamily: 'serif', fontSize: 32, color: darkGrey)),
+                  Text('medicines', style: TextStyle(fontFamily: 'serif', fontSize: 32, color: primaryTeal, fontStyle: FontStyle.italic, height: 0.8)),
+                ],
+              ),
+              Obx(() => Column(
+                children: [
+                  Text('${controller.filteredProducts.length}',
+                      style: const TextStyle(fontFamily: 'serif', fontSize: 32, color: darkGrey)),
+                  const Text('PRODUCTS',
+                      style: TextStyle(color: mutedText, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                ],
+              )),
+            ],
           ),
         ],
       ),
@@ -74,124 +164,162 @@ class ProductsPage extends StatelessWidget {
 
   Widget _buildSearchBar(ProductController controller) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: AppSearchInput(
-        hintText: AppStrings.searchProducts,
-        onChanged: controller.setSearchQuery,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+        ),
+        child: TextField(
+          onChanged: controller.setSearchQuery,
+          decoration: InputDecoration(
+            hintText: 'Search products or SKU...',
+            hintStyle: TextStyle(color: Colors.grey.shade400),
+            prefixIcon: Icon(Icons.search, color: Colors.grey.shade400),
+            suffixIcon: const Icon(Icons.tune, color: primaryTeal),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(vertical: 15),
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildCategoryFilter(ProductController controller) {
     return SizedBox(
-      height: 48,
-      child: Obx(() {
-        if (controller.categories.isEmpty) return const SizedBox.shrink();
-        return ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: controller.categories.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 8),
-          itemBuilder: (context, i) {
-            final cat = controller.categories[i];
-            final selected = controller.selectedCategory.value == cat;
-            return ChoiceChip(
-              label: Text(cat),
-              selected: selected,
-              onSelected: (_) => controller.setCategory(cat),
-              selectedColor: AppColors.primary,
-              labelStyle: TextStyle(
-                color: selected ? Colors.white : AppColors.textPrimary,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                fontSize: 13,
+      height: 40,
+      child: Obx(() => ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        itemCount: controller.categories.length,
+        itemBuilder: (context, i) {
+          final cat = controller.categories[i];
+          final isSelected = controller.selectedCategory.value == cat;
+          return Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: InkWell(
+              onTap: () => controller.setCategory(cat),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: isSelected ? darkGrey : Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: isSelected ? Colors.transparent : Colors.grey.shade200),
+                ),
+                child: Text(cat, style: TextStyle(color: isSelected ? Colors.white : mutedText, fontWeight: FontWeight.w600)),
               ),
-              backgroundColor: AppColors.inputFill,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide(color: selected ? AppColors.primary : AppColors.border),
-              ),
-            );
-          },
-        );
-      }),
+            ),
+          );
+        },
+      )),
     );
+  }
+
+  Color _getCardColor(int index) {
+    List<Color> colors = [const Color(0xFFFDF4BE), const Color(0xFFF9D1D1), const Color(0xFFD6E4FF)];
+    return colors[index % colors.length];
   }
 }
 
 class _ProductCard extends StatelessWidget {
-  final ProductEntity product;
+  final dynamic product; // Replace with your ProductEntity
   final CartController cartController;
-  const _ProductCard({required this.product, required this.cartController});
+  final Color accentColor;
+
+  const _ProductCard({required this.product, required this.cartController, required this.accentColor});
 
   @override
   Widget build(BuildContext context) {
-    final currency = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
-    return AppCard(
-      padding: EdgeInsets.zero,
+    final currency = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
+    final inStock = product.isInStock;
+    // Logic to determine if we show the stepper (if already in cart) or Add Button
+    final cartItemCount = cartController.getItemCount(product.id);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: cartItemCount > 0 ? Border.all(color: ProductsPage.primaryTeal.withOpacity(0.5), width: 1.5) : null,
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AspectRatio(
-            aspectRatio: 1.2,
-            child: Container(
-              decoration: const BoxDecoration(
-                color: AppColors.primaryLight,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 60, height: 60,
+                decoration: BoxDecoration(color: accentColor, borderRadius: BorderRadius.circular(16)),
+                child: Icon(Icons.medication_liquid_sharp, color: Colors.brown.withOpacity(0.4), size: 30),
               ),
-              child: const Icon(Icons.inventory_2, size: 48, color: AppColors.primary),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(product.name,
-                  style: AppTypography.titleSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 2),
-                Text(product.code, style: AppTypography.caption),
-                const SizedBox(height: 6),
-                Row(
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(currency.format(product.price),
-                        style: AppTypography.titleMedium.copyWith(color: AppColors.primary)),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: product.isInStock ? AppColors.successLight : AppColors.errorLight,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        product.isInStock ? AppStrings.inStock : AppStrings.outOfStock,
-                        style: TextStyle(
-                          fontSize: 9, fontWeight: FontWeight.w600,
-                          color: product.isInStock ? AppColors.success : AppColors.error,
-                        ),
-                      ),
-                    ),
+                    Text(product.name, style: const TextStyle(fontFamily: 'serif', fontSize: 18, fontWeight: FontWeight.bold, color: ProductsPage.darkGrey)),
+                    const SizedBox(height: 4),
+                    Text(product.code, style: const TextStyle(color: ProductsPage.mutedText, fontSize: 12)),
                   ],
                 ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity, height: 32,
-                  child: ElevatedButton(
-                    onPressed: product.isInStock ? () {
-                      cartController.addItem(product);
-                      AppSnackBar.showSuccess(context, AppStrings.itemAddedToCart);
-                    } : null,
-                    style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: const Size(double.infinity, 32),
-                      textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                    ),
-                    child: const Text(AppStrings.addToCart),
-                  ),
-                ),
-              ],
-            ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(currency.format(product.price), style: const TextStyle(fontFamily: 'serif', fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Text('/ piece', style: TextStyle(color: Colors.grey, fontSize: 10)),
+                ],
+              )
+            ],
           ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: inStock ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.circle, size: 8, color: inStock ? const Color(0xFF22C55E) : const Color(0xFFEF4444)),
+                    const SizedBox(width: 6),
+                    Text(inStock ? '${product.stock} in stock' : 'Out of stock',
+                        style: TextStyle(color: inStock ? const Color(0xFF15803D) : const Color(0xFFB91C1C), fontSize: 11, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+              if (inStock && cartItemCount > 0) _buildStepper(cartItemCount)
+              else if (inStock) ElevatedButton(
+                onPressed: () => cartController.addItem(product),
+                style: ElevatedButton.styleFrom(backgroundColor: ProductsPage.primaryTeal, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 0),
+                child: const Text('Add to cart'),
+              )
+              else TextButton(
+                    onPressed: () {},
+                    child: const Row(children: [Text('Notify me ', style: TextStyle(color: ProductsPage.primaryTeal)), Icon(Icons.notifications_none, size: 16, color: ProductsPage.primaryTeal)])
+                ),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepper(int count) {
+    return Container(
+      decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
+      child: Row(
+        children: [
+          IconButton(onPressed: () => cartController.removeItem(product.id), icon: const Icon(Icons.remove, size: 16)),
+          Text('$count', style: const TextStyle(fontWeight: FontWeight.bold)),
+          IconButton(onPressed: () => cartController.addItem(product), icon: const Icon(Icons.add, size: 16, color: ProductsPage.primaryTeal)),
         ],
       ),
     );

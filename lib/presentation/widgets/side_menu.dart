@@ -1,68 +1,89 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
+// Note: You may not need the 'badges' package if you use standard Containers for pills,
+// but I have kept it for the Cart as per your original logic.
 import 'package:badges/badges.dart' as badges;
+
 import '../../core/constants/app_routes.dart';
 import '../../core/constants/app_strings.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_typography.dart';
 import '../controllers/cart_controller.dart';
 
 class SideMenu extends StatelessWidget {
   final String currentRoute;
   const SideMenu({super.key, required this.currentRoute});
 
+  // --- Exact Color Palette from Image ---
+  final Color bgColor = const Color(0xFF113C36); // Main dark teal background
+  final Color cardBg = const Color(0xFF09312B); // Profile card background
+  final Color iconBg = const Color(0xFF1C4942); // Background behind icons
+  final Color activeBg = const Color(0xFF19534A); // Active menu item background
+  final Color accentCyan = const Color(0xFF60E0CE); // Cyan for text and dots
+  final Color textMuted = const Color(0xFF6E8D88); // Muted grey/green text
+  final Color dangerCoral = const Color(0xFFF27B7B); // Sign out text/icon
+  final Color warningYellow = const Color(0xFFD4B36A); // Pending badge text
+
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      backgroundColor: AppColors.sidebarBackground,
+      backgroundColor: bgColor,
+      width: MediaQuery.of(context).size.width * 0.85, // Typical width for this design
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topRight: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+        ),
+      ),
       child: SafeArea(
         child: Column(
           children: [
-            _buildHeader(context),
-            const Divider(color: AppColors.sidebarDivider, height: 1),
+            _buildTopHeader(context),
+            _buildProfileCard(),
+            const SizedBox(height: 16),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 children: [
+                  _SectionHeader(title: 'BROWSE'),
                   _MenuItem(
-                    icon: Icons.dashboard_outlined,
-                    activeIcon: Icons.dashboard,
-                    label: AppStrings.dashboard,
+                    icon: Icons.bar_chart,
+                    label: AppStrings.dashboard, // or 'Dashboard'
                     route: AppRoutes.dashboard,
                     currentRoute: currentRoute,
                     onTap: () => _navigate(context, AppRoutes.dashboard),
                   ),
                   _MenuItem(
-                    icon: Icons.inventory_2_outlined,
-                    activeIcon: Icons.inventory_2,
-                    label: AppStrings.products,
+                    icon: Icons.grid_view_rounded,
+                    label: AppStrings.products, // or 'Catalog'
                     route: AppRoutes.products,
                     currentRoute: currentRoute,
+                    trailing: Text('1.4K', style: TextStyle(color: textMuted, fontSize: 12)),
                     onTap: () => _navigate(context, AppRoutes.products),
                   ),
                   _MenuItem(
-                    icon: Icons.location_on_outlined,
-                    activeIcon: Icons.location_on,
-                    label: AppStrings.findDistributor,
+                    icon: Icons.explore_outlined,
+                    label: AppStrings.findDistributor, // or 'Find distributor'
                     route: AppRoutes.findDistributor,
                     currentRoute: currentRoute,
+                    trailing: Text('8', style: TextStyle(color: textMuted, fontSize: 12)),
                     onTap: () => _navigate(context, AppRoutes.findDistributor),
                   ),
+                  const SizedBox(height: 24),
+                  _SectionHeader(title: 'ACTIVITY'),
                   _MenuItem(
-                    icon: Icons.receipt_long_outlined,
-                    activeIcon: Icons.receipt_long,
-                    label: AppStrings.orders,
+                    icon: Icons.inventory_2_outlined,
+                    label: AppStrings.orders, // or 'Orders'
                     route: AppRoutes.orders,
                     currentRoute: currentRoute,
+                    trailing: _buildPendingPill('3 pending'),
                     onTap: () => _navigate(context, AppRoutes.orders),
                   ),
                   _MenuItem(
-                    icon: Icons.help_outline,
-                    activeIcon: Icons.help,
-                    label: AppStrings.enquiry,
+                    icon: Icons.mail_outline,
+                    label: AppStrings.enquiry, // or 'Enquiries'
                     route: AppRoutes.enquiry,
                     currentRoute: currentRoute,
+                    trailing: Text('2', style: TextStyle(color: textMuted, fontSize: 12)),
                     onTap: () => _navigate(context, AppRoutes.enquiry),
                   ),
                   _CartMenuItem(
@@ -72,7 +93,6 @@ class SideMenu extends StatelessWidget {
                 ],
               ),
             ),
-            const Divider(color: AppColors.sidebarDivider, height: 1),
             _buildFooter(context),
           ],
         ),
@@ -83,60 +103,181 @@ class SideMenu extends StatelessWidget {
   void _navigate(BuildContext context, String route) {
     Navigator.pop(context); // Close drawer
     if (currentRoute != route) {
-      context.go(route);
+     // context.go(route);
+      context.push(route);
     }
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildTopHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      child: Row(
         children: [
-          Container(
-            width: 56, height: 56,
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: BorderRadius.circular(16),
+          InkWell(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.close, color: Colors.white, size: 20),
             ),
-            child: const Icon(Icons.business, color: AppColors.primary, size: 32),
           ),
-          const SizedBox(height: 12),
-          Text(AppStrings.appName,
-            style: AppTypography.titleLarge.copyWith(color: AppColors.white)),
-          const SizedBox(height: 2),
-          Text(AppStrings.appTagline,
-            style: AppTypography.bodySmall.copyWith(color: AppColors.sidebarText.withOpacity(0.7))),
+          Expanded(
+            child: Center(
+              child: RichText(
+                text: TextSpan(
+                  style: const TextStyle(
+                    fontSize: 20,
+                    letterSpacing: 1.2,
+                    color: Colors.white,
+                    fontFamily: 'serif',
+                  ),
+                  children: [
+                    const TextSpan(text: 'VIRCHOW '),
+                    TextSpan(
+                      text: 'Rx',
+                      style: TextStyle(color: accentCyan, fontStyle: FontStyle.italic),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 36), // Balance the close button
         ],
       ),
     );
   }
 
-  Widget _buildFooter(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: Column(
+  Widget _buildProfileCard() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.05), width: 1),
+      ),
+      child: Row(
         children: [
-          ListTile(
-            leading: const Icon(Icons.settings_outlined, color: AppColors.sidebarIcon),
-            title: Text(AppStrings.settings,
-              style: AppTypography.bodyMedium.copyWith(color: AppColors.sidebarText)),
-            dense: true,
-            onTap: () => Navigator.pop(context),
+          Stack(
+            children: [
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: accentCyan,
+                child: const Text('CP',
+                    style: TextStyle(color: Color(0xFF0B3B36), fontWeight: FontWeight.bold, fontSize: 16)),
+              ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF22C55E), // Online green dot
+                    shape: BoxShape.circle,
+                    border: Border.all(color: cardBg, width: 2),
+                  ),
+                ),
+              ),
+            ],
           ),
-          ListTile(
-            leading: const Icon(Icons.logout, color: AppColors.sidebarIcon),
-            title: Text(AppStrings.logout,
-              style: AppTypography.bodyMedium.copyWith(color: AppColors.sidebarText)),
-            dense: true,
-            onTap: () => Navigator.pop(context),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'City Pharmacy',
+                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600, fontFamily: 'serif'),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'PH001 • MUMBAI',
+                  style: TextStyle(color: textMuted, fontSize: 10, letterSpacing: 1.2, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 8),
-          Text(AppStrings.version,
-            style: AppTypography.caption.copyWith(color: AppColors.sidebarText.withOpacity(0.5))),
-          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF113C36),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.chevron_right, color: Colors.white, size: 20),
+          )
         ],
+      ),
+    );
+  }
+
+  Widget _buildPendingPill(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFF454030), // Dark yellow-ish background
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(text, style: TextStyle(color: warningYellow, fontSize: 11, fontWeight: FontWeight.w600)),
+    );
+  }
+
+  Widget _buildFooter(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.05), width: 1)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          InkWell(
+            onTap: () {},
+            child: Row(
+              children: [
+                Icon(Icons.settings_outlined, color: textMuted, size: 20),
+                const SizedBox(width: 8),
+                Text('Settings', style: TextStyle(color: textMuted, fontSize: 14)),
+              ],
+            ),
+          ),
+          Container(height: 16, width: 1, color: Colors.white.withOpacity(0.1)),
+          InkWell(
+            onTap: () {},
+            child: Row(
+              children: [
+                Icon(Icons.logout, color: dangerCoral, size: 20),
+                const SizedBox(width: 8),
+                Text('Sign out', style: TextStyle(color: dangerCoral, fontSize: 14)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  const _SectionHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 12, top: 8, bottom: 12),
+      child: Text(
+        title,
+        style: const TextStyle(
+          color: Color(0xFF6E8D88),
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 2.0,
+        ),
       ),
     );
   }
@@ -144,7 +285,6 @@ class SideMenu extends StatelessWidget {
 
 class _MenuItem extends StatelessWidget {
   final IconData icon;
-  final IconData activeIcon;
   final String label;
   final String route;
   final String currentRoute;
@@ -153,7 +293,6 @@ class _MenuItem extends StatelessWidget {
 
   const _MenuItem({
     required this.icon,
-    required this.activeIcon,
     required this.label,
     required this.route,
     required this.currentRoute,
@@ -164,28 +303,40 @@ class _MenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isActive = currentRoute.startsWith(route);
+
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: isActive ? AppColors.sidebarActive : Colors.transparent,
-        borderRadius: BorderRadius.circular(10),
+        color: isActive ? const Color(0xFF19534A) : Colors.transparent, // Active BG
+        borderRadius: BorderRadius.circular(16),
       ),
       child: ListTile(
-        leading: Icon(
-          isActive ? activeIcon : icon,
-          color: isActive ? AppColors.white : AppColors.sidebarIcon,
-          size: 22,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: isActive ? Colors.transparent : const Color(0xFF1C4942),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            icon,
+            color: isActive ? const Color(0xFF60E0CE) : Colors.white70,
+            size: 20,
+          ),
         ),
         title: Text(
           label,
-          style: AppTypography.bodyMedium.copyWith(
-            color: isActive ? AppColors.white : AppColors.sidebarText,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 15,
             fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
           ),
         ),
-        trailing: trailing,
+        trailing: isActive
+            ? const Icon(Icons.circle, color: Color(0xFF60E0CE), size: 10)
+            : trailing,
         onTap: onTap,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         dense: true,
       ),
     );
@@ -195,6 +346,7 @@ class _MenuItem extends StatelessWidget {
 class _CartMenuItem extends StatelessWidget {
   final String currentRoute;
   final VoidCallback onTap;
+
   const _CartMenuItem({required this.currentRoute, required this.onTap});
 
   @override
@@ -205,19 +357,21 @@ class _CartMenuItem extends StatelessWidget {
         final count = controller.itemCount;
         return _MenuItem(
           icon: Icons.shopping_cart_outlined,
-          activeIcon: Icons.shopping_cart,
-          label: AppStrings.cart,
+          label: AppStrings.cart, // or 'Cart'
           route: AppRoutes.cart,
           currentRoute: currentRoute,
           onTap: onTap,
           trailing: count > 0
               ? badges.Badge(
-                  badgeContent: Text(
-                    '$count',
-                    style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600),
-                  ),
-                  badgeStyle: const badges.BadgeStyle(badgeColor: AppColors.badgeBackground),
-                )
+            badgeContent: Text(
+              '$count',
+              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600),
+            ),
+            badgeStyle: const badges.BadgeStyle(
+              badgeColor: Color(0xFFFF5252), // The exact red used in the badge
+              elevation: 0,
+            ),
+          )
               : null,
         );
       }),

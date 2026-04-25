@@ -23,6 +23,10 @@ class CartController extends GetxController {
 
   bool get isEmpty => items.isEmpty;
 
+  int getItemCount(String productId) {
+    final item = items.firstWhereOrNull((i) => i.product.id == productId);
+    return item?.quantity.value ?? 0;
+  }
   void addItem(ProductEntity product, {int quantity = 1}) {
     final existing = items.firstWhereOrNull((i) => i.product.id == product.id);
     if (existing != null) {
