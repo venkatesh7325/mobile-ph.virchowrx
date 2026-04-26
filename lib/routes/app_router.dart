@@ -52,7 +52,7 @@ class AppRouter {
         path: AppRoutes.orders,
         builder: (context, state) {
           DependencyInjection.bindOrders();
-          return const OrdersPage();
+          return const MyOrdersScreen();
         },
       ),
       GoRoute(
