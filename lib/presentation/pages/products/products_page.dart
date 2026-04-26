@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:ph_virchowrx/presentation/pages/products/product_details.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../controllers/cart_controller.dart';
@@ -237,77 +239,87 @@ class _ProductCard extends StatelessWidget {
     // Logic to determine if we show the stepper (if already in cart) or Add Button
     final cartItemCount = cartController.getItemCount(product.id);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: cartItemCount > 0 ? Border.all(color: ProductsPage.primaryTeal.withOpacity(0.5), width: 1.5) : null,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
-      ),
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 60, height: 60,
-                decoration: BoxDecoration(color: accentColor, borderRadius: BorderRadius.circular(16)),
-                child: Icon(Icons.medication_liquid_sharp, color: Colors.brown.withOpacity(0.4), size: 30),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    return GestureDetector(
+      onTap: () {
+        context.push(AppRoutes.productDetail, extra: product);
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: cartItemCount > 0 ? Border.all(color: ProductsPage.primaryTeal.withOpacity(0.5), width: 1.5) : null,
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+        ),
+        child: Column(
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    context.push(AppRoutes.productGallery, extra: product);
+                  },
+                  child: Container(
+                    width: 60, height: 60,
+                    decoration: BoxDecoration(color: accentColor, borderRadius: BorderRadius.circular(16)),
+                    child: Icon(Icons.medication_liquid_sharp, color: Colors.brown.withOpacity(0.4), size: 30),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(product.name, style: const TextStyle(fontFamily: 'serif', fontSize: 18, fontWeight: FontWeight.bold, color: ProductsPage.darkGrey)),
+                      const SizedBox(height: 4),
+                      Text(product.code, style: const TextStyle(color: ProductsPage.mutedText, fontSize: 12)),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(product.name, style: const TextStyle(fontFamily: 'serif', fontSize: 18, fontWeight: FontWeight.bold, color: ProductsPage.darkGrey)),
-                    const SizedBox(height: 4),
-                    Text(product.code, style: const TextStyle(color: ProductsPage.mutedText, fontSize: 12)),
+                    Text(currency.format(product.price), style: const TextStyle(fontFamily: 'serif', fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text('/ piece', style: TextStyle(color: Colors.grey, fontSize: 10)),
                   ],
+                )
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: inStock ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.circle, size: 8, color: inStock ? const Color(0xFF22C55E) : const Color(0xFFEF4444)),
+                      const SizedBox(width: 6),
+                      Text(inStock ? '${product.stock} in stock' : 'Out of stock',
+                          style: TextStyle(color: inStock ? const Color(0xFF15803D) : const Color(0xFFB91C1C), fontSize: 11, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
                 ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(currency.format(product.price), style: const TextStyle(fontFamily: 'serif', fontSize: 18, fontWeight: FontWeight.bold)),
-                  const Text('/ piece', style: TextStyle(color: Colors.grey, fontSize: 10)),
-                ],
-              )
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: inStock ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.circle, size: 8, color: inStock ? const Color(0xFF22C55E) : const Color(0xFFEF4444)),
-                    const SizedBox(width: 6),
-                    Text(inStock ? '${product.stock} in stock' : 'Out of stock',
-                        style: TextStyle(color: inStock ? const Color(0xFF15803D) : const Color(0xFFB91C1C), fontSize: 11, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-              ),
-              if (inStock && cartItemCount > 0) _buildStepper(cartItemCount)
-              else if (inStock) ElevatedButton(
-                onPressed: () => cartController.addItem(product),
-                style: ElevatedButton.styleFrom(backgroundColor: ProductsPage.primaryTeal, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 0),
-                child: const Text('Add to cart'),
-              )
-              else TextButton(
-                    onPressed: () {},
-                    child: const Row(children: [Text('Notify me ', style: TextStyle(color: ProductsPage.primaryTeal)), Icon(Icons.notifications_none, size: 16, color: ProductsPage.primaryTeal)])
-                ),
-            ],
-          )
-        ],
+                if (inStock && cartItemCount > 0) _buildStepper(cartItemCount)
+                else if (inStock) ElevatedButton(
+                  onPressed: () => cartController.addItem(product),
+                  style: ElevatedButton.styleFrom(backgroundColor: ProductsPage.primaryTeal, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 0),
+                  child: const Text('Add to cart'),
+                )
+                else TextButton(
+                      onPressed: () {},
+                      child: const Row(children: [Text('Notify me ', style: TextStyle(color: ProductsPage.primaryTeal)), Icon(Icons.notifications_none, size: 16, color: ProductsPage.primaryTeal)])
+                  ),
+              ],
+            )
+          ],
+        ),
       ),
     );
   }

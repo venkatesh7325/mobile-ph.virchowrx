@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+
+import '../../../core/constants/app_routes.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   final dynamic product; // Replace with your ProductEntity
@@ -14,30 +17,33 @@ class ProductDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: bgLight,
-      appBar: _buildAppBar(context),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 10),
-                _buildHeroImageCard(),
-                const SizedBox(height: 24),
-                _buildPriceSection(),
-                const SizedBox(height: 20),
-                _buildCompositionCard(),
-                const SizedBox(height: 16),
-                _buildDetailGrid(),
-                const SizedBox(height: 120), // Space for bottom bar
-              ],
+    return SafeArea(
+      top: false,
+      child: Scaffold(
+        backgroundColor: bgLight,
+        appBar: _buildAppBar(context),
+        body: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 10),
+                  _buildHeroImageCard(),
+                  const SizedBox(height: 24),
+                  _buildPriceSection(),
+                  const SizedBox(height: 20),
+                  _buildCompositionCard(),
+                  const SizedBox(height: 16),
+                  _buildDetailGrid(),
+                  const SizedBox(height: 120), // Space for bottom bar
+                ],
+              ),
             ),
-          ),
-          _buildBottomActionBar(),
-        ],
+            _buildBottomActionBar(context),
+          ],
+        ),
       ),
     );
   }
@@ -246,7 +252,7 @@ class ProductDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomActionBar() {
+  Widget _buildBottomActionBar(BuildContext context) {
     return Align(
       alignment: Alignment.bottomCenter,
       child: Container(
@@ -285,7 +291,9 @@ class ProductDetailScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    context.push(AppRoutes.productInfo, extra: product);
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.transparent,
                     shadowColor: Colors.transparent,

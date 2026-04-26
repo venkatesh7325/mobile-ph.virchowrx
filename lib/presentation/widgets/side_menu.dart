@@ -101,7 +101,7 @@ class SideMenu extends StatelessWidget {
   }
 
   void _navigate(BuildContext context, String route) {
-    Navigator.pop(context); // Close drawer
+
     if (currentRoute != route) {
      // context.go(route);
       context.push(route);

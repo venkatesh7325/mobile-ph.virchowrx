@@ -3,6 +3,20 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
+
+  static const Color primaryTeal = Color(0xFF168A7F);
+  static const Color primaryTealDark = Color(0xFF107067);
+  static const Color bgLight = Color(0xFFF6FBF9);
+  static const Color textDark = Color(0xFF111827);
+  static const Color textLight = Color(0xFF6B7280);
+  static const Color accentBlue = Color(0xFF007AFF);
+  static const Color accentGold = Color(0xFFFFB300);
+  static const Color badgeUrgent = Color(0xFFEB5757);
+  static const Color badgeUrgentBg = Color(0xFFFEF2F2);
+  static const Color gridIconBlue = Color(0xFFCCF1ED);
+  static const Color gridIconGold = Color(0xFFFEF9C3);
+  static const Color gridIconPurple = Color(0xFFE0E7FF);
+
   // Primary
   static const Color primary = Color(0xFF1A73E8);
   static const Color primaryDark = Color(0xFF0D47A1);

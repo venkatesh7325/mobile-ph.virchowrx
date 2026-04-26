@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/constants/app_strings.dart';
@@ -42,178 +43,402 @@ class DashboardPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildWelcome(),
-                const SizedBox(height: 20),
-                _buildStatGrid(context, controller, currency),
+                // _buildHeader(),
+                // const SizedBox(height: 24),
+                _buildWelcomeSection(),
                 const SizedBox(height: 24),
-                _buildRecentOrdersHeader(context),
-                const SizedBox(height: 12),
-                _buildRecentOrders(context, controller, currency),
+                _buildActiveOrderValueCard(),
+                const SizedBox(height: 16),
+                _buildStatusGrid(context),
+                const SizedBox(height: 100),
               ],
             ),
           ),
         );
       }),
+      floatingActionButton: _buildFab(),
     );
   }
 
-  Widget _buildWelcome() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(AppStrings.welcomeBack, style: AppTypography.bodyMedium),
-        const SizedBox(height: 4),
-        Text(AppStrings.quickStats,
-          style: AppTypography.headlineMedium.copyWith(fontSize: 22)),
-      ],
-    );
-  }
-
-  Widget _buildStatGrid(
-    BuildContext context, DashboardController controller, NumberFormat currency,
-  ) {
-    final crossAxisCount = Responsive.value(
-      context, mobile: 2, tablet: 4, desktop: 4,
-    );
-    return GridView.count(
-      crossAxisCount: crossAxisCount,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 1.3,
-      children: [
-        Obx(() => StatCard(
-          title: AppStrings.totalOrders,
-          value: '${controller.totalOrders.value}',
-          icon: Icons.receipt_long, color: AppColors.primary,
-          onTap: () => context.go(AppRoutes.orders),
-        )),
-        Obx(() => StatCard(
-          title: AppStrings.totalRevenue,
-          value: currency.format(controller.totalRevenue.value),
-          icon: Icons.trending_up, color: AppColors.success, trend: '+12%',
-        )),
-        Obx(() => StatCard(
-          title: AppStrings.activeProducts,
-          value: '${controller.activeProducts.value}',
-          icon: Icons.inventory_2, color: AppColors.accent,
-          onTap: () => context.go(AppRoutes.products),
-        )),
-        Obx(() => StatCard(
-          title: AppStrings.pendingEnquiries,
-          value: '${controller.pendingEnquiries.value}',
-          icon: Icons.help, color: AppColors.warning,
-          onTap: () => context.go(AppRoutes.enquiry),
-        )),
-      ],
-    );
-  }
-
-  Widget _buildRecentOrdersHeader(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(child: Text(AppStrings.recentOrders, style: AppTypography.titleLarge)),
-        TextButton(
-          onPressed: () => context.go(AppRoutes.orders),
-          child: const Text(AppStrings.viewAll),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRecentOrders(
-    BuildContext context, DashboardController controller, NumberFormat currency,
-  ) {
-    if (controller.recentOrders.isEmpty) {
-      return const AppEmptyView(
-        title: AppStrings.noOrdersFound,
-        icon: Icons.receipt_long_outlined,
-      );
-    }
-    return Column(
-      children: controller.recentOrders.map((order) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: _OrderListTile(order: order, currency: currency),
-        );
-      }).toList(),
-    );
-  }
-}
-
-class _OrderListTile extends StatelessWidget {
-  final OrderEntity order;
-  final NumberFormat currency;
-  const _OrderListTile({required this.order, required this.currency});
-
-  Color _statusColor() {
-    switch (order.status) {
-      case OrderStatus.pending: return AppColors.warning;
-      case OrderStatus.processing: return AppColors.primary;
-      case OrderStatus.shipped: return AppColors.accent;
-      case OrderStatus.delivered: return AppColors.success;
-      case OrderStatus.cancelled: return AppColors.error;
-    }
-  }
-
-  String _statusLabel() {
-    switch (order.status) {
-      case OrderStatus.pending: return AppStrings.pending;
-      case OrderStatus.processing: return AppStrings.processing;
-      case OrderStatus.shipped: return AppStrings.shipped;
-      case OrderStatus.delivered: return AppStrings.delivered;
-      case OrderStatus.cancelled: return AppStrings.cancelled;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      onTap: () => context.go('${AppRoutes.orders}/${order.id}'),
-      padding: const EdgeInsets.all(14),
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Container(
-            width: 44, height: 44,
-            decoration: BoxDecoration(
-              color: _statusColor().withOpacity(0.12),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(Icons.receipt, color: _statusColor(), size: 20),
+          IconButton(
+            onPressed: () {
+
+            },
+            icon: const Icon(Icons.menu, color: AppColors.primaryTeal),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(order.orderNumber,
-                  style: AppTypography.titleSmall, overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 2),
-                Text(DateFormat('dd MMM yyyy').format(order.createdAt),
-                  style: AppTypography.caption),
-              ],
-            ),
+          Text(
+            'VIRCHOW Rx',
+            style: GoogleFonts.montserrat(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primaryTeal),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          Stack(
             children: [
-              Text(currency.format(order.total),
-                style: AppTypography.titleSmall.copyWith(color: AppColors.primary)),
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: _statusColor().withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(_statusLabel(),
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: _statusColor())),
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.shopping_cart_outlined, color: Colors.grey),
               ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                      color: AppColors.badgeUrgent, shape: BoxShape.circle),
+                  child: const Text('10',
+                      style: TextStyle(color: Colors.white, fontSize: 8)),
+                ),
+              )
             ],
           ),
         ],
       ),
     );
   }
+  Widget _buildWelcomeSection() {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Good morning,',
+              style: GoogleFonts.playfairDisplay(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textDark),
+            ),
+            Text(
+              'City Pharmacy',
+              style: GoogleFonts.playfairDisplay(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textDark),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                  color: Colors.white, borderRadius: BorderRadius.circular(20)),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(4)),
+                    child: Text(
+                      'PH001',
+                      style: GoogleFonts.montserrat(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1F2937)),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text('·   Mumbai · Maharashtra',
+                      style: GoogleFonts.montserrat(
+                          fontSize: 10, color: AppColors.textLight)),
+                ],
+              ),
+            ),
+          ],
+        ),
+        // --- The Fixed Circle ---
+        Positioned(
+          top: 0,
+          right: -150,
+          child: Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.gridIconBlue,
+                  AppColors.primaryTeal,
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primaryTeal.withOpacity(0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                )
+              ],
+            ),
+            // Adding the SP Text in the center
+            child: Center(
+              child: Text(
+                'SP',
+                style: GoogleFonts.montserrat(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActiveOrderValueCard() {
+    return Stack(
+      children: [
+        // This container provides the background and fixed height
+        Container(
+          height: 180,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF168A7F), Color(0xFF0C9D91), Color(0xFF8CD8B8)],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              )
+            ],
+          ),
+        ),
+        Positioned.fill(
+          child: Opacity(
+            opacity: 0.15,
+            child: CustomPaint(painter: WavePatternPainter()),
+          ),
+        ),
+        // FIX: Wrap the foreground content in a SizedBox with the same height as the background
+        // so the Spacer() has a boundary to expand into.
+        SizedBox(
+          height: 180,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('ACTIVE ORDER VALUE',
+                        style: GoogleFonts.montserrat(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 1.2)),
+                    Row(
+                      children: [
+                        const Icon(Icons.trending_up, size: 14, color: AppColors.accentGold),
+                        const SizedBox(width: 4),
+                        Text('+12.4%',
+                            style: GoogleFonts.montserrat(
+                                fontSize: 12, color: Colors.white)),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  '₹1,24,500.00',
+                  style: GoogleFonts.playfairDisplay(
+                      fontSize: 40,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white),
+                ),
+                const Spacer(), // Now this won't crash because it's inside a 180px box
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        _buildWeekCompareCol('THIS WEEK', '₹89,200'),
+                        const SizedBox(width: 24),
+                        _buildWeekCompareCol('LAST WEEK', '₹79,300'),
+                      ],
+                    ),
+                    SizedBox(
+                      width: 80,
+                      height: 30,
+                      child: CustomPaint(painter: SparklinePainter()),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWeekCompareCol(String title, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: GoogleFonts.montserrat(fontSize: 9, color: Colors.white70)),
+        Text(value,
+            style: GoogleFonts.montserrat(
+                fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
+      ],
+    );
+  }
+
+  Widget _buildStatusGrid(BuildContext context) {
+    return GridView.count(
+      // Keep these two properties to avoid "infinite height" errors
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      crossAxisSpacing: 16,
+      mainAxisSpacing: 16,
+      childAspectRatio: 1.1,
+      children: [
+        _buildGridCard(AppColors.gridIconBlue, Icons.view_in_ar_outlined, '247',
+            'Total orders', '+24', AppColors.primaryTeal),
+        _buildGridCard(AppColors.gridIconGold, Icons.access_time_outlined, '3',
+            'Pending', 'Urgent', AppColors.accentGold),
+        _buildGridCard(AppColors.gridIconBlue, Icons.link, '1,420', 'In stock',
+            'SKUs', AppColors.primaryTeal),
+        _buildGridCard(AppColors.gridIconPurple, Icons.inbox_outlined, '8',
+            'Distributors', null, const Color(0xFF6B7280)),
+      ],
+    );
+  }
+
+  Widget _buildGridCard(Color iconBg, IconData icon, String value, String title,
+      String? badgeText, Color accentColor) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.grey.withOpacity(0.05))),
+      child: Stack(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                    color: iconBg, borderRadius: BorderRadius.circular(12)),
+                child: Icon(icon, color: accentColor, size: 20),
+              ),
+              const Spacer(),
+              Text(
+                value,
+                style: GoogleFonts.playfairDisplay(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textDark),
+              ),
+              Text(
+                title,
+                style: GoogleFonts.montserrat(
+                    fontSize: 11, color: AppColors.textLight),
+              ),
+            ],
+          ),
+          if (badgeText != null)
+            Positioned(
+              top: 0,
+              right: 0,
+              child: _buildBadge(badgeText, accentColor),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBadge(String text, Color color) {
+    bool isUrgent = text == 'Urgent';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+          color: isUrgent ? AppColors.badgeUrgentBg : color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12)),
+      child: Text(text,
+          style: GoogleFonts.montserrat(
+              color: isUrgent ? AppColors.badgeUrgent : color,
+              fontSize: 9,
+              fontWeight: FontWeight.bold)),
+    );
+  }
+
+  Widget _buildFab() {
+    return Container(
+      width: 60,
+      height: 60,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.primaryTeal, AppColors.primaryTealDark],
+        ),
+        boxShadow: [
+          BoxShadow(
+              color: AppColors.primaryTeal.withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6))
+        ],
+      ),
+      child: IconButton(
+        onPressed: () {},
+        icon: const Icon(Icons.headphones_outlined, color: Colors.white, size: 28),
+      ),
+    );
+  }
 }
+
+class WavePatternPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+    for (double r = 50; r < size.width * 1.5; r += 40) {
+      canvas.drawCircle(Offset(size.width * 0.8, size.height * 0.2), r, paint);
+    }
+  }
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class SparklinePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 2.0
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+    final path = Path();
+    path.moveTo(0, size.height * 0.7);
+    path.lineTo(size.width * 0.2, size.height * 0.8);
+    path.lineTo(size.width * 0.4, size.height * 0.4);
+    path.lineTo(size.width * 0.6, size.height * 0.6);
+    path.lineTo(size.width * 0.8, size.height * 0.2);
+    path.lineTo(size.width, size.height * 0.3);
+    canvas.drawPath(path, paint);
+  }
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+

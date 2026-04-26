@@ -1,4 +1,7 @@
 import 'package:go_router/go_router.dart';
+import 'package:ph_virchowrx/presentation/pages/cart/place_order_screen.dart';
+import 'package:ph_virchowrx/presentation/pages/products/product_gallery_screen.dart';
+import 'package:ph_virchowrx/presentation/pages/products/product_info_screen.dart';
 import '../core/constants/app_routes.dart';
 import '../dependency_injection.dart';
 import '../presentation/pages/cart/cart_page.dart';
@@ -7,6 +10,7 @@ import '../presentation/pages/distributor/distributor_page.dart';
 import '../presentation/pages/enquiry/enquiry_page.dart';
 import '../presentation/pages/login/login_page.dart';
 import '../presentation/pages/orders/orders_page.dart';
+import '../presentation/pages/products/product_details.dart';
 import '../presentation/pages/products/products_page.dart';
 
 class AppRouter {
@@ -41,7 +45,7 @@ class AppRouter {
         path: AppRoutes.findDistributor,
         builder: (context, state) {
           DependencyInjection.bindDistributor();
-          return const FindDistributorPage();
+          return const DistributorsListScreen();
         },
       ),
       GoRoute(
@@ -55,12 +59,45 @@ class AppRouter {
         path: AppRoutes.enquiry,
         builder: (context, state) {
           DependencyInjection.bindEnquiry();
-          return const EnquiryPage();
+          return const EnquiryScreen();
         },
       ),
       GoRoute(
         path: AppRoutes.cart,
-        builder: (context, state) => const CartPage(),
+        builder: (context, state) => const CartScreen(),
+      ),
+      // app_router.dart
+      GoRoute(
+        path: AppRoutes.productDetail, // Ensure this matches AppRoutes.productDetail
+        builder: (context, state) {
+          // Retrieve the product passed via 'extra'
+          final product = state.extra;
+          return ProductDetailScreen(product: product);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.productInfo, // Ensure this matches AppRoutes.productDetail
+        builder: (context, state) {
+          // Retrieve the product passed via 'extra'
+          final product = state.extra;
+          return ProductInfoScreen(product: product);
+        },
+      ),
+
+      GoRoute(
+        path: AppRoutes.productGallery, // Ensure this matches AppRoutes.productDetail
+        builder: (context, state) {
+          // Retrieve the product passed via 'extra'
+          final product = state.extra;
+          return ProductGalleryScreen(product: product);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.placeOrderScreen,
+        builder: (context, state) {
+          DependencyInjection.bindProducts();
+          return const PlaceOrderScreen();
+        },
       ),
     ],
   );

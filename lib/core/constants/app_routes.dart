@@ -16,4 +16,8 @@ class AppRoutes {
   static const String checkout = '/checkout';
   static const String profile = '/profile';
   static const String settings = '/settings';
+  static const String productDetails = '/product-detail';
+  static const String productInfo = '/product-info';
+  static const String productGallery = '/product-gallery';
+  static const String placeOrderScreen = '/place-order';
 }

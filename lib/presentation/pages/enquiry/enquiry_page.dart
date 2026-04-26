@@ -1,288 +1,358 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:intl/intl.dart';
-import '../../../core/constants/app_routes.dart';
-import '../../../core/constants/app_strings.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_typography.dart';
-import '../../../core/utils/responsive.dart';
-import '../../../domain/entities/enquiry_entity.dart';
-import '../../controllers/enquiry_controller.dart';
-import '../../widgets/app_button.dart';
-import '../../widgets/app_card.dart';
-import '../../widgets/app_input.dart';
-import '../../widgets/app_scaffold.dart';
-import '../../widgets/app_states.dart';
 
-class EnquiryPage extends StatelessWidget {
-  const EnquiryPage({super.key});
+class EnquiryScreen extends StatefulWidget {
+  const EnquiryScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final controller = Get.find<EnquiryController>();
-    return AppScaffold(
-      title: AppStrings.myEnquiries,
-      currentRoute: AppRoutes.enquiry,
-      body: Obx(() {
-        if (controller.isLoading.value && controller.enquiries.isEmpty) {
-          return const AppLoadingView();
-        }
-        if (controller.errorMessage.value != null && controller.enquiries.isEmpty) {
-          return AppErrorView(
-            message: controller.errorMessage.value!,
-            onRetry: controller.refresh,
-          );
-        }
-        if (controller.enquiries.isEmpty) {
-          return AppEmptyView(
-            title: AppStrings.noEnquiriesFound,
-            message: 'Submit your first enquiry to get started',
-            icon: Icons.help_outline,
-            action: SizedBox(
-              width: 200,
-              child: AppButton(
-                label: AppStrings.newEnquiry,
-                onPressed: () => _showNewEnquiry(context, controller),
-                icon: Icons.add,
-              ),
-            ),
-          );
-        }
-        return RefreshIndicator(
-          onRefresh: controller.refresh,
-          child: ListView.builder(
-            padding: Responsive.pagePadding(context),
-            itemCount: controller.enquiries.length,
-            itemBuilder: (context, i) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _EnquiryCard(enquiry: controller.enquiries[i]),
-            ),
-          ),
-        );
-      }),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showNewEnquiry(context, controller),
-        icon: const Icon(Icons.add),
-        label: const Text(AppStrings.newEnquiry),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-      ),
-    );
-  }
-
-  void _showNewEnquiry(BuildContext context, EnquiryController controller) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => _NewEnquirySheet(controller: controller),
-    );
-  }
+  State<EnquiryScreen> createState() => _EnquiryScreenState();
 }
 
-class _NewEnquirySheet extends StatefulWidget {
-  final EnquiryController controller;
-  const _NewEnquirySheet({required this.controller});
+class _EnquiryScreenState extends State<EnquiryScreen> {
+  final TextEditingController _descController = TextEditingController(
+    text:
+    "Hi, I'd like to confirm availability of 25 units for next week's batch. Also, do you offer any volume pricing for orders above ₹10,000?",
+  );
+  String _selectedDistributor = 'CityMed Wholesale';
+  String _selectedProduct = 'Jusgo · 75mg/mL Inj';
 
-  @override
-  State<_NewEnquirySheet> createState() => _NewEnquirySheetState();
-}
-
-class _NewEnquirySheetState extends State<_NewEnquirySheet> {
-  final _formKey = GlobalKey<FormState>();
-  final _subjectCtrl = TextEditingController();
-  final _messageCtrl = TextEditingController();
-  EnquiryType _type = EnquiryType.general;
+  static const Color primaryGreen = Color(0xFF0F6E56);
+  static const Color accentGreen = Color(0xFF1D9E75);
+  static const Color bgColor = Color(0xFFF4FAF7);
 
   @override
   void dispose() {
-    _subjectCtrl.dispose();
-    _messageCtrl.dispose();
+    _descController.dispose();
     super.dispose();
-  }
-
-  String? _required(String? v) =>
-      (v == null || v.trim().isEmpty) ? AppStrings.requiredField : null;
-
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    final ok = await widget.controller.submitEnquiry(
-      subject: _subjectCtrl.text.trim(),
-      message: _messageCtrl.text.trim(),
-      type: _type,
-    );
-    if (!mounted) return;
-    if (ok) {
-      Navigator.pop(context);
-      AppSnackBar.showSuccess(context, AppStrings.enquirySubmittedSuccess);
-    } else {
-      AppSnackBar.showError(context,
-        widget.controller.errorMessage.value ?? AppStrings.somethingWentWrong);
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomInset),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40, height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.divider,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+    return Scaffold(
+      backgroundColor: bgColor,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 10),
+                    _buildTopNav(context),
+                    const SizedBox(height: 20),
+                    _buildFormCard(),
+                    const SizedBox(height: 24),
+                    _buildRecentEnquiries(),
+                    const SizedBox(height: 24),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
-              Text(AppStrings.newEnquiry, style: AppTypography.titleLarge),
-              const SizedBox(height: 16),
-              Text(AppStrings.enquiryType, style: AppTypography.titleSmall),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: EnquiryType.values.map((t) => ChoiceChip(
-                  label: Text(_typeLabel(t)),
-                  selected: _type == t,
-                  onSelected: (_) => setState(() => _type = t),
-                  selectedColor: AppColors.primary,
-                  labelStyle: TextStyle(
-                    color: _type == t ? Colors.white : AppColors.textPrimary,
-                    fontSize: 12,
-                  ),
-                )).toList(),
-              ),
-              const SizedBox(height: 16),
-              AppInput(
-                label: AppStrings.subject,
-                hintText: 'Brief subject of your enquiry',
-                controller: _subjectCtrl,
-                validator: _required,
-                textInputAction: TextInputAction.next,
-              ),
-              const SizedBox(height: 12),
-              AppInput(
-                label: AppStrings.message,
-                hintText: 'Describe your enquiry in detail',
-                controller: _messageCtrl,
-                validator: _required,
-                maxLines: 4,
-              ),
-              const SizedBox(height: 20),
-              Obx(() => AppButton(
-                label: AppStrings.submitEnquiry,
-                onPressed: _submit,
-                isLoading: widget.controller.isSubmitting.value,
-                icon: Icons.send,
-              )),
-            ],
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: _buildFAB(),
+    );
+  }
+
+  Widget _buildTopNav(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _iconBtn(Icons.chevron_left, onTap: () => Navigator.pop(context)),
+        const Text(
+          'Enquiry',
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
+        ),
+        _iconBtn(Icons.more_horiz),
+      ],
+    );
+  }
+
+  Widget _iconBtn(IconData icon, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: const Color(0xFFE2F0EB),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, size: 20, color: primaryGreen),
+      ),
+    );
+  }
+
+  Widget _buildFormCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 3)),
+        ],
+      ),
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSendTag(),
+          const SizedBox(height: 6),
+          _buildHeading(),
+          const SizedBox(height: 6),
+          const Text(
+            'Connect directly with our distributors. Average response time 12 minutes.',
+            style: TextStyle(fontSize: 13, color: Color(0xFF888888), height: 1.5),
           ),
+          const SizedBox(height: 20),
+          _buildLabel('Distributor', required: true),
+          const SizedBox(height: 8),
+          _buildDropdown(
+            value: _selectedDistributor,
+            icon: Icons.grid_view_rounded,
+            items: ['CityMed Wholesale', 'MedPlus Distribution', 'Sahayadri Pharma'],
+            onChanged: (v) => setState(() => _selectedDistributor = v!),
+          ),
+          const SizedBox(height: 16),
+          _buildLabel('Product', required: true),
+          const SizedBox(height: 8),
+          _buildDropdown(
+            value: _selectedProduct,
+            icon: Icons.link,
+            items: ['Jusgo · 75mg/mL Inj', 'Ranivox · INJ', 'Cefovix · INJ'],
+            onChanged: (v) => setState(() => _selectedProduct = v!),
+          ),
+          const SizedBox(height: 16),
+          _buildLabel('Description', required: true),
+          const SizedBox(height: 8),
+          _buildDescriptionField(),
+          const SizedBox(height: 16),
+          _buildSubmitBtn(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSendTag() {
+    return Row(
+      children: [
+        Container(width: 20, height: 2, color: accentGreen),
+        const SizedBox(width: 8),
+        const Text(
+          'SEND A REQUEST',
+          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1.2, color: Color(0xFF1D9E75)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeading() {
+    return RichText(
+      text: const TextSpan(
+        style: TextStyle(fontSize: 28, color: Color(0xFF0F2D22), height: 1.15),
+        children: [
+          TextSpan(text: 'New ', style: TextStyle(fontWeight: FontWeight.w600)),
+          TextSpan(
+            text: 'enquiry',
+            style: TextStyle(fontStyle: FontStyle.italic, fontWeight: FontWeight.w400, color: Color(0xFF1D9E75)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLabel(String text, {bool required = false}) {
+    return Row(
+      children: [
+        Text(text, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF444444))),
+        if (required)
+          const Text(' *', style: TextStyle(fontSize: 13, color: Color(0xFF1D9E75), fontWeight: FontWeight.w600)),
+      ],
+    );
+  }
+
+  Widget _buildDropdown({
+    required String value,
+    required IconData icon,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFA),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE0E8E4), width: 1),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          isExpanded: true,
+          icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF888888), size: 20),
+          style: const TextStyle(fontSize: 14, color: Color(0xFF1A1A1A), fontFamily: 'default'),
+          items: items
+              .map((item) => DropdownMenuItem(
+            value: item,
+            child: Row(
+              children: [
+                Icon(icon, size: 15, color: const Color(0xFF888888)),
+                const SizedBox(width: 10),
+                Text(item, style: const TextStyle(fontSize: 14, color: Color(0xFF1A1A1A))),
+              ],
+            ),
+          ))
+              .toList(),
+          onChanged: onChanged,
         ),
       ),
     );
   }
 
-  String _typeLabel(EnquiryType t) {
-    switch (t) {
-      case EnquiryType.product: return AppStrings.productEnquiry;
-      case EnquiryType.general: return AppStrings.generalEnquiry;
-      case EnquiryType.price: return AppStrings.priceEnquiry;
-      case EnquiryType.other: return 'Other';
-    }
-  }
-}
-
-class _EnquiryCard extends StatelessWidget {
-  final EnquiryEntity enquiry;
-  const _EnquiryCard({required this.enquiry});
-
-  Color _statusColor() {
-    switch (enquiry.status) {
-      case EnquiryStatus.open: return AppColors.warning;
-      case EnquiryStatus.inProgress: return AppColors.primary;
-      case EnquiryStatus.resolved: return AppColors.success;
-      case EnquiryStatus.closed: return AppColors.textHint;
-    }
-  }
-
-  String _statusLabel() {
-    switch (enquiry.status) {
-      case EnquiryStatus.open: return AppStrings.open;
-      case EnquiryStatus.inProgress: return 'In Progress';
-      case EnquiryStatus.resolved: return AppStrings.resolved;
-      case EnquiryStatus.closed: return 'Closed';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
+  Widget _buildDescriptionField() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFA),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE0E8E4), width: 1),
+      ),
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(enquiry.subject,
-                  style: AppTypography.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _statusColor().withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(_statusLabel(),
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _statusColor())),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(enquiry.message,
-            style: AppTypography.bodySmall, maxLines: 2, overflow: TextOverflow.ellipsis),
-          if (enquiry.response != null) ...[
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.successLight,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.check_circle, size: 16, color: AppColors.success),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(enquiry.response!,
-                      style: AppTypography.bodySmall.copyWith(color: AppColors.success)),
-                  ),
-                ],
-              ),
+          TextField(
+            controller: _descController,
+            maxLines: 5,
+            maxLength: 500,
+            style: const TextStyle(fontSize: 13, color: Color(0xFF333333), height: 1.5),
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+              counterText: '',
             ),
-          ],
-          const SizedBox(height: 8),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 10),
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Icon(Icons.schedule, size: 12, color: AppColors.textHint),
-              const SizedBox(width: 4),
-              Text(DateFormat('dd MMM yyyy').format(enquiry.createdAt),
-                style: AppTypography.caption),
+              GestureDetector(
+                onTap: () {},
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFFDDDDDD), width: 1),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.attach_file, size: 13, color: Color(0xFF666666)),
+                      SizedBox(width: 5),
+                      Text('Attach file', style: TextStyle(fontSize: 12, color: Color(0xFF666666))),
+                    ],
+                  ),
+                ),
+              ),
+              Text(
+                '${_descController.text.length} / 500',
+                style: const TextStyle(fontSize: 12, color: Color(0xFFAAAAAA)),
+              ),
             ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSubmitBtn() {
+    return GestureDetector(
+      onTap: () {},
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: primaryGreen,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.send, size: 16, color: Colors.white),
+            SizedBox(width: 8),
+            Text(
+              'Submit enquiry',
+              style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecentEnquiries() {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Recent enquiries',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A)),
+            ),
+            GestureDetector(
+              onTap: () {},
+              child: const Text(
+                'View all →',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1D9E75)),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _recentEnquiryItem('Lyfetran 1000', 'Pending', const Color(0xFFF5A623)),
+      ],
+    );
+  }
+
+  Widget _recentEnquiryItem(String name, String status, Color statusColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6)],
+      ),
+      child: Row(
+        children: [
+          Container(width: 8, height: 8, decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle)),
+          const SizedBox(width: 10),
+          Expanded(child: Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF1A1A1A)))),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(status, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: statusColor)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFAB() {
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        color: primaryGreen,
+        shape: BoxShape.circle,
+        boxShadow: [BoxShadow(color: primaryGreen.withOpacity(0.4), blurRadius: 16, offset: const Offset(0, 4))],
+      ),
+      child: const Icon(Icons.headset_mic_outlined, color: Colors.white, size: 22),
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:badges/badges.dart' as badges;
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_routes.dart';
 import '../../core/theme/app_colors.dart';
 import '../controllers/cart_controller.dart';
@@ -29,7 +30,17 @@ class AppScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
+        backgroundColor: Colors.white,
+        title:  Center(
+          child: Text(
+            title,
+            style: GoogleFonts.montserrat(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.primaryTeal),
+          ),
+        ),
+        iconTheme: const IconThemeData(color: AppColors.primaryTeal),
         actions: [
           if (showCartIcon) _buildCartAction(context),
           ...?actions,
