@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:ph_virchowrx/presentation/pages/products/product_details.dart';
 import '../../../core/constants/app_routes.dart';
-import '../../../core/constants/app_strings.dart';
+import '../../../domain/entities/product_entity.dart';
 import '../../controllers/cart_controller.dart';
+import '../../widgets/product_network_image.dart';
 import '../../controllers/product_controller.dart';
 
 class ProductsPage extends StatelessWidget {
@@ -39,16 +39,22 @@ class ProductsPage extends StatelessWidget {
               return RefreshIndicator(
                 onRefresh: controller.refresh,
                 child: ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   itemCount: controller.filteredProducts.length,
                   itemBuilder: (context, i) {
                     final p = controller.filteredProducts[i];
-                    return _ProductCard(
-                      product: p,
-                      cartController: cartController,
-                      // Mapping colors to match UI screenshot based on index or type
-                      accentColor: _getCardColor(i),
-                    );
+                    return Obx(() {
+                      final thumb = controller.thumbnailUrlFor(p);
+                      final thumbFallback = controller.thumbnailFallbackFor(p);
+                      return _ProductCard(
+                        product: p,
+                        cartController: cartController,
+                        accentColor: _getCardColor(i),
+                        catalogImageUrl: thumb,
+                        catalogImageFallbackUrl: thumbFallback,
+                      );
+                    });
                   },
                 ),
               );
@@ -226,11 +232,20 @@ class ProductsPage extends StatelessWidget {
 }
 
 class _ProductCard extends StatelessWidget {
-  final dynamic product; // Replace with your ProductEntity
+  final ProductEntity product;
   final CartController cartController;
   final Color accentColor;
+  /// Prefer first URL from product-images API (via [ProductController.thumbnailUrlFor]).
+  final String? catalogImageUrl;
+  final String? catalogImageFallbackUrl;
 
-  const _ProductCard({required this.product, required this.cartController, required this.accentColor});
+  const _ProductCard({
+    required this.product,
+    required this.cartController,
+    required this.accentColor,
+    this.catalogImageUrl,
+    this.catalogImageFallbackUrl,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -261,10 +276,20 @@ class _ProductCard extends StatelessWidget {
                   onTap: () {
                     context.push(AppRoutes.productGallery, extra: product);
                   },
-                  child: Container(
-                    width: 60, height: 60,
-                    decoration: BoxDecoration(color: accentColor, borderRadius: BorderRadius.circular(16)),
-                    child: Icon(Icons.medication_liquid_sharp, color: Colors.brown.withOpacity(0.4), size: 30),
+                  child: ProductNetworkImage(
+                    imageUrl: catalogImageUrl ?? product.imageUrl,
+                    fallbackImageUrl: catalogImageFallbackUrl,
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
+                    borderRadius: BorderRadius.circular(16),
+                    fallback: Container(
+                      width: 60,
+                      height: 60,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(color: accentColor, borderRadius: BorderRadius.circular(16)),
+                      child: Icon(Icons.medication_liquid_sharp, color: Colors.brown.withOpacity(0.4), size: 30),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -289,32 +314,65 @@ class _ProductCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: inStock ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.circle, size: 8, color: inStock ? const Color(0xFF22C55E) : const Color(0xFFEF4444)),
-                      const SizedBox(width: 6),
-                      Text(inStock ? '${product.stock} in stock' : 'Out of stock',
-                          style: TextStyle(color: inStock ? const Color(0xFF15803D) : const Color(0xFFB91C1C), fontSize: 11, fontWeight: FontWeight.bold)),
-                    ],
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: inStock ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.circle, size: 8, color: inStock ? const Color(0xFF22C55E) : const Color(0xFFEF4444)),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              inStock ? '${product.stock} in stock' : 'Out of stock',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: inStock ? const Color(0xFF15803D) : const Color(0xFFB91C1C),
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-                if (inStock && cartItemCount > 0) _buildStepper(cartItemCount)
-                else if (inStock) ElevatedButton(
-                  onPressed: () => cartController.addItem(product),
-                  style: ElevatedButton.styleFrom(backgroundColor: ProductsPage.primaryTeal, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 0),
-                  child: const Text('Add to cart'),
-                )
-                else TextButton(
-                      onPressed: () {},
-                      child: const Row(children: [Text('Notify me ', style: TextStyle(color: ProductsPage.primaryTeal)), Icon(Icons.notifications_none, size: 16, color: ProductsPage.primaryTeal)])
+                const SizedBox(width: 8),
+                if (inStock && cartItemCount > 0)
+                  _buildStepper(cartItemCount)
+                else if (inStock)
+                  ElevatedButton(
+                    onPressed: () => cartController.addItem(product),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ProductsPage.primaryTeal,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    child: const Text('Add to cart'),
+                  )
+                else
+                  TextButton(
+                    onPressed: () {},
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('Notify me ', style: TextStyle(color: ProductsPage.primaryTeal)),
+                        Icon(Icons.notifications_none, size: 16, color: ProductsPage.primaryTeal),
+                      ],
+                    ),
                   ),
               ],
             )

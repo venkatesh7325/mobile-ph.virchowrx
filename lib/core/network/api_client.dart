@@ -1,15 +1,18 @@
-import 'dart:async';
+import 'dart:async' as async;
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+
+import '../auth/auth_session.dart';
 import '../env/env.dart';
 import '../errors/exceptions.dart';
 
 class ApiClient {
   final http.Client _client;
   final String baseUrl;
+  final AuthSession? authSession;
 
-  ApiClient({http.Client? client})
+  ApiClient({http.Client? client, this.authSession})
       : _client = client ?? http.Client(),
         baseUrl = Env.baseUrl;
 
@@ -18,7 +21,18 @@ class ApiClient {
         'Accept': 'application/json',
       };
 
-  Map<String, String> _authHeaders(String? token) {
+  String? _resolveToken(String? explicit, {required bool useSession}) {
+    if (!useSession) {
+      if (explicit != null && explicit.isNotEmpty) return explicit;
+      return null;
+    }
+    if (explicit != null && explicit.isNotEmpty) return explicit;
+    final s = authSession?.token.value;
+    if (s == null || s.isEmpty) return null;
+    return s;
+  }
+
+  Map<String, String> _headers(String? token) {
     if (token != null && token.isNotEmpty) {
       return {..._defaultHeaders, 'Authorization': 'Bearer $token'};
     }
@@ -38,7 +52,7 @@ class ApiClient {
   dynamic _handleResponse(http.Response response) {
     if (Env.isDevelopment) {
       // ignore: avoid_print
-      print('[API] ${response.request?.method} ${response.request?.url} → ${response.statusCode}');
+      print('[API] ${response.request?.method} ${response.request?.url} → ${response.statusCode} ${response.body}');
     }
 
     switch (response.statusCode) {
@@ -53,7 +67,7 @@ class ApiClient {
         }
       case 400:
         final body = _tryDecodeBody(response.body);
-        throw ServerException(message: body['message'] ?? 'Bad request', statusCode: 400);
+        throw ServerException(message: body['message']?.toString() ?? 'Bad request', statusCode: 400);
       case 401:
         throw const UnauthorizedException();
       case 403:
@@ -62,7 +76,7 @@ class ApiClient {
         throw const NotFoundException();
       case 422:
         final body = _tryDecodeBody(response.body);
-        throw ValidationException(message: body['message'] ?? 'Validation failed');
+        throw ValidationException(message: body['message']?.toString() ?? 'Validation failed');
       case 500:
       case 502:
       case 503:
@@ -88,7 +102,7 @@ class ApiClient {
       return await request().timeout(Duration(milliseconds: Env.timeout));
     } on SocketException {
       throw const NetworkException();
-    } on TimeoutException {
+    } on async.TimeoutException {
       throw const TimeoutException();
     } on AppException {
       rethrow;
@@ -101,11 +115,13 @@ class ApiClient {
     String endpoint, {
     Map<String, dynamic>? queryParams,
     String? token,
+    bool useSessionToken = true,
   }) =>
       _execute(() async {
+        final resolved = _resolveToken(token, useSession: useSessionToken);
         final response = await _client.get(
           _buildUri(endpoint, queryParams),
-          headers: _authHeaders(token),
+          headers: _headers(resolved),
         );
         return _handleResponse(response);
       });
@@ -114,13 +130,42 @@ class ApiClient {
     String endpoint, {
     Map<String, dynamic>? body,
     String? token,
+    bool useSessionToken = true,
   }) =>
       _execute(() async {
+        final resolved = _resolveToken(token, useSession: useSessionToken);
         final response = await _client.post(
           _buildUri(endpoint),
-          headers: _authHeaders(token),
+          headers: _headers(resolved),
           body: jsonEncode(body ?? {}),
         );
+        return _handleResponse(response);
+      });
+
+  /// Multipart POST (e.g. pharmacy registration with PDF/images). Do not set
+  /// `Content-Type`; the boundary is added automatically.
+  Future<dynamic> postMultipart(
+    String endpoint, {
+    required Map<String, String> fields,
+    Map<String, String> filePaths = const {},
+    String? token,
+    bool useSessionToken = false,
+  }) =>
+      _execute(() async {
+        final resolved = _resolveToken(token, useSession: useSessionToken);
+        final uri = _buildUri(endpoint);
+        final request = http.MultipartRequest('POST', uri);
+        request.headers['Accept'] = 'application/json';
+        if (resolved != null && resolved.isNotEmpty) {
+          request.headers['Authorization'] = 'Bearer $resolved';
+        }
+        request.fields.addAll(fields);
+        for (final e in filePaths.entries) {
+          if (e.value.isEmpty) continue;
+          request.files.add(await http.MultipartFile.fromPath(e.key, e.value));
+        }
+        final streamed = await _client.send(request);
+        final response = await http.Response.fromStream(streamed);
         return _handleResponse(response);
       });
 
@@ -128,11 +173,13 @@ class ApiClient {
     String endpoint, {
     Map<String, dynamic>? body,
     String? token,
+    bool useSessionToken = true,
   }) =>
       _execute(() async {
+        final resolved = _resolveToken(token, useSession: useSessionToken);
         final response = await _client.put(
           _buildUri(endpoint),
-          headers: _authHeaders(token),
+          headers: _headers(resolved),
           body: jsonEncode(body ?? {}),
         );
         return _handleResponse(response);
@@ -142,11 +189,13 @@ class ApiClient {
     String endpoint, {
     Map<String, dynamic>? body,
     String? token,
+    bool useSessionToken = true,
   }) =>
       _execute(() async {
+        final resolved = _resolveToken(token, useSession: useSessionToken);
         final response = await _client.patch(
           _buildUri(endpoint),
-          headers: _authHeaders(token),
+          headers: _headers(resolved),
           body: jsonEncode(body ?? {}),
         );
         return _handleResponse(response);
@@ -155,11 +204,13 @@ class ApiClient {
   Future<dynamic> delete(
     String endpoint, {
     String? token,
+    bool useSessionToken = true,
   }) =>
       _execute(() async {
+        final resolved = _resolveToken(token, useSession: useSessionToken);
         final response = await _client.delete(
           _buildUri(endpoint),
-          headers: _authHeaders(token),
+          headers: _headers(resolved),
         );
         return _handleResponse(response);
       });

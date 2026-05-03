@@ -33,6 +33,22 @@ class DistributorModel extends DistributorEntity {
         isOpen: json['is_open'] ?? true,
       );
 
+  factory DistributorModel.fromPharmacy(Map<String, dynamic> json) => DistributorModel(
+        id: json['id']?.toString() ?? '',
+        name: json['name']?.toString() ?? '',
+        address: json['address']?.toString() ?? '',
+        city: json['city']?.toString() ?? '',
+        state: json['state']?.toString() ?? '',
+        pincode: json['pincode']?.toString() ?? '',
+        phone: json['phone']?.toString() ?? '',
+        email: json['email']?.toString(),
+        rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+        latitude: (json['latitude'] as num?)?.toDouble(),
+        longitude: (json['longitude'] as num?)?.toDouble(),
+        distanceKm: (json['distance_km'] as num?)?.toDouble(),
+        isOpen: json['is_active'] ?? true,
+      );
+
   static List<DistributorModel> get sampleList => const [
         DistributorModel(
           id: '1', name: 'Sharma Distributors', address: '45, MG Road',

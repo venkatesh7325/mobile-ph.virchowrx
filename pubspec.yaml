@@ -47,6 +47,8 @@ dependencies:
   # ---- Environment variables ----
   flutter_dotenv: ^5.2.1
 
+  shared_preferences: ^2.3.3
+
   # ---- Functional / domain helpers ----
   dartz: ^0.10.1          # Either<Failure, T> for repository return types
   equatable: ^2.0.5        # Value-equality on entities & failures
@@ -57,6 +59,7 @@ dependencies:
   # ---- UI helpers ----
   badges: ^3.1.2           # Cart count badge in side menu / app bar
   google_fonts: ^8.0.2
+  file_picker: ^8.1.7      # Pharmacy registration document uploads
 
 dev_dependencies:
   flutter_test:

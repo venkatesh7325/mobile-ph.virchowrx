@@ -7,7 +7,9 @@ import 'package:badges/badges.dart' as badges;
 
 import '../../core/constants/app_routes.dart';
 import '../../core/constants/app_strings.dart';
+import '../../dependency_injection.dart';
 import '../controllers/cart_controller.dart';
+import '../controllers/login_controller.dart';
 
 class SideMenu extends StatelessWidget {
   final String currentRoute;
@@ -247,7 +249,11 @@ class SideMenu extends StatelessWidget {
           ),
           Container(height: 16, width: 1, color: Colors.white.withOpacity(0.1)),
           InkWell(
-            onTap: () {},
+            onTap: () async {
+              Navigator.of(context).pop();
+              DependencyInjection.bindLogin();
+              await Get.find<LoginController>().logout();
+            },
             child: Row(
               children: [
                 Icon(Icons.logout, color: dangerCoral, size: 20),

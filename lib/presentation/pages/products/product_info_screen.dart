@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:go_router/go_router.dart';
 
 class ProductInfoScreen extends StatelessWidget {
   final dynamic product;
@@ -16,7 +16,7 @@ class ProductInfoScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgLight,
-      appBar: _buildAppBar(),
+      appBar: _buildAppBar(context),
       // Replace Stack with Column
       body: Column(
         children: [
@@ -60,11 +60,11 @@ class ProductInfoScreen extends StatelessWidget {
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
-      leading: _buildSquareButton(Icons.chevron_left, () => Get.back()),
+      leading: _buildSquareButton(Icons.chevron_left, () => context.pop()),
       centerTitle: true,
       title: const Text('Product info',
           style: TextStyle(color: darkText, fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'serif')),
@@ -269,21 +269,24 @@ class ProductInfoScreen extends StatelessWidget {
               gradient: const LinearGradient(colors: [primaryTeal, Color(0xFF0F5A53)]),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Add to cart · ₹110', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                  SizedBox(width: 8),
-                  Icon(Icons.arrow_forward, color: Colors.white, size: 20),
-                ],
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Add to cart · ₹110', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    SizedBox(width: 8),
+                    Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+                  ],
+                ),
               ),
             ),
           ),

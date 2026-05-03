@@ -1,4 +1,6 @@
 import 'package:get/get.dart';
+
+import 'core/auth/auth_session.dart';
 import 'core/network/api_client.dart';
 import 'data/datasources/auth_remote_datasource.dart';
 import 'data/datasources/distributor_remote_datasource.dart';
@@ -20,17 +22,30 @@ import 'presentation/controllers/dashboard_controller.dart';
 import 'presentation/controllers/distributor_controller.dart';
 import 'presentation/controllers/enquiry_controller.dart';
 import 'presentation/controllers/login_controller.dart';
+import 'presentation/controllers/register_controller.dart';
 import 'presentation/controllers/order_controller.dart';
 import 'presentation/controllers/product_controller.dart';
 
 class DependencyInjection {
-  static void init() {
-    // Core
-    Get.put<ApiClient>(ApiClient(), permanent: true);
+  DependencyInjection._();
 
-    // Data sources
+  static Future<void> init() async {
+    await Get.putAsync(() async {
+      final session = AuthSession();
+      await session.init();
+      return session;
+    });
+
+    Get.put<ApiClient>(
+      ApiClient(authSession: Get.find<AuthSession>()),
+      permanent: true,
+    );
+
     Get.put<AuthRemoteDataSource>(
-      AuthRemoteDataSourceImpl(apiClient: Get.find()),
+      AuthRemoteDataSourceImpl(
+        apiClient: Get.find(),
+        authSession: Get.find(),
+      ),
       permanent: true,
     );
     Get.put<ProductRemoteDataSource>(
@@ -50,7 +65,6 @@ class DependencyInjection {
       permanent: true,
     );
 
-    // Repositories
     Get.put<AuthRepository>(
       AuthRepositoryImpl(remoteDataSource: Get.find()),
       permanent: true,
@@ -72,25 +86,28 @@ class DependencyInjection {
       permanent: true,
     );
 
-    // Cart - shared globally
     Get.put<CartController>(CartController(), permanent: true);
   }
 
-  /// Lazy-bind feature controllers for routes.
-
   static void bindLogin() {
     if (!Get.isRegistered<LoginController>()) {
-      Get.lazyPut(() => LoginController(repository: Get.find()));
+      Get.lazyPut(() => LoginController(repository: Get.find(), authSession: Get.find()));
+    }
+  }
+
+  static void bindRegister() {
+    if (!Get.isRegistered<RegisterController>()) {
+      Get.lazyPut(() => RegisterController(repository: Get.find()));
     }
   }
 
   static void bindDashboard() {
     if (!Get.isRegistered<DashboardController>()) {
       Get.lazyPut(() => DashboardController(
-        orderRepository: Get.find(),
-        productRepository: Get.find(),
-        enquiryRepository: Get.find(),
-      ));
+            orderRepository: Get.find(),
+            productRepository: Get.find(),
+            enquiryRepository: Get.find(),
+          ));
     }
   }
 
