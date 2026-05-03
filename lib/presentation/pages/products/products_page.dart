@@ -29,8 +29,6 @@ class ProductsPage extends StatelessWidget {
         children: [
           _buildHeaderSection(controller),
           _buildSearchBar(controller),
-          _buildCategoryFilter(controller),
-          const SizedBox(height: 16),
           Expanded(
             child: Obx(() {
               if (controller.isLoading.value && controller.products.isEmpty) {
@@ -39,7 +37,11 @@ class ProductsPage extends StatelessWidget {
               return RefreshIndicator(
                 onRefresh: controller.refresh,
                 child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: EdgeInsets.only(
+                    left: 20,
+                    right: 20,
+                    bottom: MediaQuery.of(context).padding.bottom + 40, // ← 80 for FAB clearance
+                  ),
                   itemCount: controller.filteredProducts.length,
                   itemBuilder: (context, i) {
                     final p = controller.filteredProducts[i];
@@ -188,37 +190,6 @@ class ProductsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoryFilter(ProductController controller) {
-    return SizedBox(
-      height: 40,
-      child: Obx(() => ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: controller.categories.length,
-        itemBuilder: (context, i) {
-          final cat = controller.categories[i];
-          final isSelected = controller.selectedCategory.value == cat;
-          return Padding(
-            padding: const EdgeInsets.only(right: 10),
-            child: InkWell(
-              onTap: () => controller.setCategory(cat),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: isSelected ? darkGrey : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: isSelected ? Colors.transparent : Colors.grey.shade200),
-                ),
-                child: Text(cat, style: TextStyle(color: isSelected ? Colors.white : mutedText, fontWeight: FontWeight.w600)),
-              ),
-            ),
-          );
-        },
-      )),
-    );
-  }
-
   Color _getCardColor(int index) {
     List<Color> colors = [const Color(0xFFFDF4BE), const Color(0xFFF9D1D1), const Color(0xFFD6E4FF)];
     return colors[index % colors.length];
@@ -307,10 +278,24 @@ class _ProductCard extends StatelessWidget {
                   ),
                 ),
                 if (inStock && cartItemCount > 0) _buildStepper(cartItemCount)
-                else if (inStock) ElevatedButton(
-                  onPressed: () => cartController.addItem(product),
-                  style: ElevatedButton.styleFrom(backgroundColor: ProductsPage.primaryTeal, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 0),
-                  child: const Text('Add to cart'),
+                else if (inStock) SizedBox(
+                  width: MediaQuery.of(context).size.width / 3,
+                  child: ElevatedButton(
+                    onPressed: () => cartController.addItem(product),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ProductsPage.primaryTeal,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      elevation: 0,
+                      minimumSize: const Size(0, 36), // ← controls height
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    child: const Text(
+                      'Add to cart',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ),
                 )
                 else TextButton(
                       onPressed: () {},

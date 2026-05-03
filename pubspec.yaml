@@ -57,6 +57,7 @@ dependencies:
   # ---- UI helpers ----
   badges: ^3.1.2           # Cart count badge in side menu / app bar
   google_fonts: ^8.0.2
+  flutter_secure_storage: ^10.0.0
 
 dev_dependencies:
   flutter_test:
@@ -84,6 +85,7 @@ flutter:
   # other environment config and must be declared here so flutter_dotenv
   # can load it at runtime.
   assets:
+    - .env
     - assets/images/
     - assets/icons/
 

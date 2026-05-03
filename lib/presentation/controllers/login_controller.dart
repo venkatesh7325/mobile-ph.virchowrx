@@ -1,5 +1,4 @@
 import 'package:get/get.dart';
-
 import '../../domain/entities/auth_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 
@@ -19,7 +18,7 @@ class LoginController extends GetxController {
   void clearError() => errorMessage.value = null;
 
   /// Returns true on success, false on failure.
-  /// On failure, [errorMessage] is populated and the UI can read it.
+  /// On success, the JWT and user are persisted by the repository.
   Future<bool> login({
     required String username,
     required String password,
@@ -43,20 +42,13 @@ class LoginController extends GetxController {
       },
           (user) {
         currentUser.value = user;
-        // TODO: persist token securely (e.g. flutter_secure_storage) here
-        // so subsequent API calls can attach it as a Bearer header.
         return true;
       },
     );
   }
 
   Future<void> logout() async {
-    isLoading.value = true;
-    final result = await repository.logout();
-    isLoading.value = false;
-    result.fold(
-          (failure) => errorMessage.value = failure.message,
-          (_) => currentUser.value = null,
-    );
+    await repository.logout();
+    currentUser.value = null;
   }
 }

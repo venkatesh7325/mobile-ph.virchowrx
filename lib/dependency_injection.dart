@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'core/network/api_client.dart';
+import 'core/storage/auth_storage.dart';
 import 'data/datasources/auth_remote_datasource.dart';
 import 'data/datasources/distributor_remote_datasource.dart';
 import 'data/datasources/enquiry_remote_datasource.dart';
@@ -52,7 +53,10 @@ class DependencyInjection {
 
     // Repositories
     Get.put<AuthRepository>(
-      AuthRepositoryImpl(remoteDataSource: Get.find()),
+      AuthRepositoryImpl(
+        remoteDataSource: Get.find(),
+        storage: AuthStorage.instance,
+      ),
       permanent: true,
     );
     Get.put<ProductRepository>(

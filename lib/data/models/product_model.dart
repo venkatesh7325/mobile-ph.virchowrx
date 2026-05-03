@@ -11,71 +11,67 @@ class ProductModel extends ProductEntity {
     super.imageUrl,
     super.description,
     super.isActive,
+    super.composition,
+    super.dosage,
+    super.minOrderQty,
+    super.maxOrderQty,
+    super.catalogId,
   });
 
+  // ── Parses the nested { "product": {}, "distributors": [] } structure ──
   factory ProductModel.fromJson(Map<String, dynamic> json) {
+    final p = json['product'] as Map<String, dynamic>;
+    final distributors = json['distributors'] as List<dynamic>;
+    final dist = distributors.isNotEmpty
+        ? distributors[0] as Map<String, dynamic>
+        : <String, dynamic>{};
+
+    final distributor = dist['distributor'] as Map<String, dynamic>? ?? {};
+
     return ProductModel(
-      id: json['id']?.toString() ?? '',
-      name: json['name'] ?? '',
-      code: json['code'] ?? '',
-      category: json['category'] ?? '',
-      price: (json['price'] as num?)?.toDouble() ?? 0.0,
-      stock: (json['stock'] as num?)?.toInt() ?? 0,
-      imageUrl: json['image_url'],
-      description: json['description'],
-      isActive: json['is_active'] ?? true,
+      id: p['id'].toString(),
+      name: p['name'] as String? ?? '',
+      code: p['sku'] as String? ?? '',                          // sku → code
+      category: p['dosage_type']?['name'] as String? ?? '',    // dosage_type → category
+      price: (dist['pharmacy_price'] as num?)?.toDouble()
+          ?? (p['unit_price'] as num?)?.toDouble()
+          ?? 0.0,
+      stock: (dist['current_stock'] as int?) ?? 0,
+      description: p['description'] as String?,
+      isActive: distributor['is_active'] as bool? ?? true,
+      composition: p['composition'] as String? ?? '',
+      dosage: p['dosage'] as String? ?? '',
+      minOrderQty: (dist['minimum_order_quantity'] as int?) ?? 1,
+      maxOrderQty: (dist['maximum_order_quantity'] as int?) ?? 9999,
+      catalogId: (dist['catalog_id'] as int?) ?? 0,
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'code': code,
-        'category': category,
-        'price': price,
-        'stock': stock,
-        'image_url': imageUrl,
-        'description': description,
-        'is_active': isActive,
-      };
+    'id': id,
+    'name': name,
+    'code': code,
+    'category': category,
+    'price': price,
+    'stock': stock,
+    'description': description,
+    'is_active': isActive,
+  };
 
   factory ProductModel.fromEntity(ProductEntity entity) => ProductModel(
-        id: entity.id,
-        name: entity.name,
-        code: entity.code,
-        category: entity.category,
-        price: entity.price,
-        stock: entity.stock,
-        imageUrl: entity.imageUrl,
-        description: entity.description,
-        isActive: entity.isActive,
-      );
-
-  // Sample data for development/testing
-  static List<ProductModel> get sampleList => [
-        const ProductModel(
-          id: '1', name: 'Premium Widget A', code: 'PWA-001', category: 'Electronics',
-          price: 1299.00, stock: 50, description: 'High quality premium widget for professionals',
-        ),
-        const ProductModel(
-          id: '2', name: 'Industrial Bolt Set', code: 'IBS-002', category: 'Hardware',
-          price: 450.00, stock: 200, description: 'Durable industrial grade bolt set',
-        ),
-        const ProductModel(
-          id: '3', name: 'Safety Gloves Pro', code: 'SGP-003', category: 'Safety',
-          price: 350.00, stock: 0, description: 'Professional safety gloves',
-        ),
-        const ProductModel(
-          id: '4', name: 'Digital Multimeter', code: 'DM-004', category: 'Electronics',
-          price: 2100.00, stock: 30, description: 'Advanced digital multimeter',
-        ),
-        const ProductModel(
-          id: '5', name: 'Steel Pipe 2 inch', code: 'SP2-005', category: 'Pipes',
-          price: 850.00, stock: 100, description: 'Heavy-duty steel pipe 2 inch diameter',
-        ),
-        const ProductModel(
-          id: '6', name: 'Power Drill 18V', code: 'PD-006', category: 'Tools',
-          price: 3500.00, stock: 25, description: 'Cordless power drill 18V battery',
-        ),
-      ];
+    id: entity.id,
+    name: entity.name,
+    code: entity.code,
+    category: entity.category,
+    price: entity.price,
+    stock: entity.stock,
+    imageUrl: entity.imageUrl,
+    description: entity.description,
+    isActive: entity.isActive,
+    composition: entity.composition,
+    dosage: entity.dosage,
+    minOrderQty: entity.minOrderQty,
+    maxOrderQty: entity.maxOrderQty,
+    catalogId: entity.catalogId,
+  );
 }

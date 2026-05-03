@@ -8,7 +8,8 @@ abstract class AuthRepository {
     required String password,
   });
 
-  Future<Either<Failure, bool>> logout();
+  Future<void> logout();
 
-  Future<Either<Failure, UserEntity>> currentUser();
+  /// Returns the cached user if one is signed in, otherwise null.
+  Future<UserEntity?> getCachedUser();
 }

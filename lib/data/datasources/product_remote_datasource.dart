@@ -1,8 +1,15 @@
+import '../../core/errors/exceptions.dart';
 import '../../core/network/api_client.dart';
+import '../../core/storage/auth_storage.dart';
 import '../models/product_model.dart';
 
 abstract class ProductRemoteDataSource {
-  Future<List<ProductModel>> getProducts({String? category, String? search, int page = 1, int limit = 20});
+  Future<List<ProductModel>> getProducts({
+    String? category,
+    String? search,
+    int page = 1,
+    int limit = 20,
+  });
   Future<ProductModel> getProductById(String id);
   Future<List<String>> getCategories();
 }
@@ -11,31 +18,52 @@ class ProductRemoteDataSourceImpl implements ProductRemoteDataSource {
   final ApiClient apiClient;
   const ProductRemoteDataSourceImpl({required this.apiClient});
 
+  Future<String> _getAuthHeader() async {
+    final token = await AuthStorage.instance.readToken();
+    if (token == null) throw UnauthorizedException(message: 'No token found');
+    return 'Bearer $token';
+  }
+
   @override
   Future<List<ProductModel>> getProducts({
-    String? category, String? search, int page = 1, int limit = 20,
+    String? category,
+    String? search,
+    int page = 1,
+    int limit = 20,
   }) async {
-    // For development, return sample data
-    await Future.delayed(const Duration(milliseconds: 800));
-    return ProductModel.sampleList;
+    print('getProducts--> called');
+    final params = <String, dynamic>{
+      'page': page,
+      'limit': limit,
+      'search': search ?? '',
+    };
+    final authHeader = await _getAuthHeader(); // ← get token
 
-    // Production code:
-    // final params = {'page': page, 'limit': limit};
-    // if (category != null) params['category'] = category;
-    // if (search != null) params['search'] = search;
-    // final response = await apiClient.get('/products', queryParams: params);
-    // return (response['data'] as List).map((e) => ProductModel.fromJson(e)).toList();
+    // Calls: GET /pharmacy/products/cataloged?search=&page=1&limit=20
+    final response = await apiClient.get(
+        '/api/pharmacy/products/cataloged',
+        queryParams: params,
+      token: authHeader
+    );
+
+    print('response--> $response');
+
+    // API returns { "products": [...], "total": 8, "page": 1, "pages": 1 }
+    final List<dynamic> list = response['products'] as List<dynamic>;
+    return list
+        .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   @override
   Future<ProductModel> getProductById(String id) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return ProductModel.sampleList.firstWhere((p) => p.id == id);
+    final response = await apiClient.get('/pharmacy/products/$id');
+    return ProductModel.fromJson(response as Map<String, dynamic>);
   }
 
   @override
   Future<List<String>> getCategories() async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    return ['All', 'Electronics', 'Hardware', 'Safety', 'Pipes', 'Tools'];
+    // You can wire this to a real endpoint later
+    return ['All', 'Injection', 'Tablet', 'Syrup'];
   }
 }

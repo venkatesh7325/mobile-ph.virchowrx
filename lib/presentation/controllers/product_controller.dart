@@ -21,18 +21,22 @@ class ProductController extends GetxController {
     loadCategories();
   }
 
+  // Change this method only:
   Future<void> loadProducts() async {
     isLoading.value = true;
     errorMessage.value = null;
 
-    final result = await repository.getProducts();
+    final result = await repository.getProducts(
+      search: searchQuery.value,   // ← pass current search to API
+    );
+
     result.fold(
-      (failure) {
+          (failure) {
         errorMessage.value = failure.message;
         products.clear();
         filteredProducts.clear();
       },
-      (data) {
+          (data) {
         products.value = data;
         _applyFilters();
       },
@@ -41,6 +45,13 @@ class ProductController extends GetxController {
     isLoading.value = false;
   }
 
+// And update setSearchQuery to also reload from API:
+  void setSearchQuery(String query) {
+    searchQuery.value = query;
+    _applyFilters(); // instant local filter while typing
+  }
+
+// refresh already calls loadProducts — no change needed
   Future<void> loadCategories() async {
     final result = await repository.getCategories();
     result.fold(
@@ -54,10 +65,7 @@ class ProductController extends GetxController {
     _applyFilters();
   }
 
-  void setSearchQuery(String query) {
-    searchQuery.value = query;
-    _applyFilters();
-  }
+
 
   void _applyFilters() {
     var list = products.toList();

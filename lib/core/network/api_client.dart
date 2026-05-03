@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../env/env.dart';
 import '../errors/exceptions.dart';
+import '../storage/auth_storage.dart';
 
 class ApiClient {
   final http.Client _client;
@@ -14,13 +15,16 @@ class ApiClient {
         baseUrl = Env.baseUrl;
 
   Map<String, String> get _defaultHeaders => {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      };
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
 
-  Map<String, String> _authHeaders(String? token) {
-    if (token != null && token.isNotEmpty) {
-      return {..._defaultHeaders, 'Authorization': 'Bearer $token'};
+  /// If [token] is passed explicitly, use it. Otherwise read the saved JWT
+  /// from secure storage so authenticated calls "just work" after sign-in.
+  Future<Map<String, String>> _buildHeaders(String? token) async {
+    final effective = token ?? await AuthStorage.instance.readToken();
+    if (effective != null && effective.isNotEmpty) {
+      return {..._defaultHeaders, 'Authorization': 'Bearer $effective'};
     }
     return _defaultHeaders;
   }
@@ -41,6 +45,8 @@ class ApiClient {
       print('[API] ${response.request?.method} ${response.request?.url} → ${response.statusCode}');
     }
 
+    final body = _tryDecodeBody(response.body);
+
     switch (response.statusCode) {
       case 200:
       case 201:
@@ -52,32 +58,54 @@ class ApiClient {
           throw const ParseException();
         }
       case 400:
-        final body = _tryDecodeBody(response.body);
-        throw ServerException(message: body['message'] ?? 'Bad request', statusCode: 400);
+        throw ServerException(
+          message: _extractMessage(body, fallback: 'Bad request'),
+          statusCode: 400,
+        );
       case 401:
-        throw const UnauthorizedException();
+        throw UnauthorizedException(
+          message: _extractMessage(body, fallback: 'Unauthorized'),
+        );
       case 403:
-        throw const UnauthorizedException(message: 'Access denied');
+        throw UnauthorizedException(
+          message: _extractMessage(body, fallback: 'Access denied'),
+        );
       case 404:
-        throw const NotFoundException();
+        throw NotFoundException(
+          message: _extractMessage(body, fallback: 'Not found'),
+        );
       case 422:
-        final body = _tryDecodeBody(response.body);
-        throw ValidationException(message: body['message'] ?? 'Validation failed');
+        throw ValidationException(
+          message: _extractMessage(body, fallback: 'Validation failed'),
+        );
       case 500:
       case 502:
       case 503:
-        throw ServerException(message: 'Server error', statusCode: response.statusCode);
+        throw ServerException(
+          message: _extractMessage(body, fallback: 'Server error'),
+          statusCode: response.statusCode,
+        );
       default:
         throw ServerException(
-          message: 'Request failed with status ${response.statusCode}',
+          message: _extractMessage(
+            body,
+            fallback: 'Request failed with status ${response.statusCode}',
+          ),
           statusCode: response.statusCode,
         );
     }
   }
 
+  String _extractMessage(Map<String, dynamic> body, {required String fallback}) {
+    final msg = body['message'] ?? body['error'] ?? body['detail'];
+    return (msg is String && msg.isNotEmpty) ? msg : fallback;
+  }
+
   Map<String, dynamic> _tryDecodeBody(String body) {
+    if (body.isEmpty) return {};
     try {
-      return jsonDecode(body) as Map<String, dynamic>;
+      final decoded = jsonDecode(body);
+      return decoded is Map<String, dynamic> ? decoded : {};
     } catch (_) {
       return {};
     }
@@ -98,68 +126,73 @@ class ApiClient {
   }
 
   Future<dynamic> get(
-    String endpoint, {
-    Map<String, dynamic>? queryParams,
-    String? token,
-  }) =>
+      String endpoint, {
+        Map<String, dynamic>? queryParams,
+        String? token,
+      }) =>
       _execute(() async {
+        final headers = await _buildHeaders(token);
         final response = await _client.get(
           _buildUri(endpoint, queryParams),
-          headers: _authHeaders(token),
+          headers: headers,
         );
         return _handleResponse(response);
       });
 
   Future<dynamic> post(
-    String endpoint, {
-    Map<String, dynamic>? body,
-    String? token,
-  }) =>
+      String endpoint, {
+        Map<String, dynamic>? body,
+        String? token,
+      }) =>
       _execute(() async {
+        final headers = await _buildHeaders(token);
         final response = await _client.post(
           _buildUri(endpoint),
-          headers: _authHeaders(token),
+          headers: headers,
           body: jsonEncode(body ?? {}),
         );
         return _handleResponse(response);
       });
 
   Future<dynamic> put(
-    String endpoint, {
-    Map<String, dynamic>? body,
-    String? token,
-  }) =>
+      String endpoint, {
+        Map<String, dynamic>? body,
+        String? token,
+      }) =>
       _execute(() async {
+        final headers = await _buildHeaders(token);
         final response = await _client.put(
           _buildUri(endpoint),
-          headers: _authHeaders(token),
+          headers: headers,
           body: jsonEncode(body ?? {}),
         );
         return _handleResponse(response);
       });
 
   Future<dynamic> patch(
-    String endpoint, {
-    Map<String, dynamic>? body,
-    String? token,
-  }) =>
+      String endpoint, {
+        Map<String, dynamic>? body,
+        String? token,
+      }) =>
       _execute(() async {
+        final headers = await _buildHeaders(token);
         final response = await _client.patch(
           _buildUri(endpoint),
-          headers: _authHeaders(token),
+          headers: headers,
           body: jsonEncode(body ?? {}),
         );
         return _handleResponse(response);
       });
 
   Future<dynamic> delete(
-    String endpoint, {
-    String? token,
-  }) =>
+      String endpoint, {
+        String? token,
+      }) =>
       _execute(() async {
+        final headers = await _buildHeaders(token);
         final response = await _client.delete(
           _buildUri(endpoint),
-          headers: _authHeaders(token),
+          headers: headers,
         );
         return _handleResponse(response);
       });
