@@ -142,6 +142,33 @@ class ApiClient {
         return _handleResponse(response);
       });
 
+  /// Multipart POST (e.g. pharmacy registration with PDF/images). Do not set
+  /// `Content-Type`; the boundary is added automatically.
+  Future<dynamic> postMultipart(
+    String endpoint, {
+    required Map<String, String> fields,
+    Map<String, String> filePaths = const {},
+    String? token,
+    bool useSessionToken = false,
+  }) =>
+      _execute(() async {
+        final resolved = _resolveToken(token, useSession: useSessionToken);
+        final uri = _buildUri(endpoint);
+        final request = http.MultipartRequest('POST', uri);
+        request.headers['Accept'] = 'application/json';
+        if (resolved != null && resolved.isNotEmpty) {
+          request.headers['Authorization'] = 'Bearer $resolved';
+        }
+        request.fields.addAll(fields);
+        for (final e in filePaths.entries) {
+          if (e.value.isEmpty) continue;
+          request.files.add(await http.MultipartFile.fromPath(e.key, e.value));
+        }
+        final streamed = await _client.send(request);
+        final response = await http.Response.fromStream(streamed);
+        return _handleResponse(response);
+      });
+
   Future<dynamic> put(
     String endpoint, {
     Map<String, dynamic>? body,

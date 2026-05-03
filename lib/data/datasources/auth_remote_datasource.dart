@@ -2,6 +2,7 @@ import '../../core/auth/auth_session.dart';
 import '../../core/errors/exceptions.dart';
 import '../../core/network/api_client.dart';
 import '../models/auth_model.dart';
+import '../../domain/entities/pharmacy_registration.dart';
 
 abstract class AuthRemoteDataSource {
   Future<UserModel> login({
@@ -12,6 +13,15 @@ abstract class AuthRemoteDataSource {
   Future<bool> logout();
 
   Future<UserModel> currentUser();
+
+  Future<SendVerificationResult> sendPharmacyEmailVerification(String email);
+
+  Future<UniqueFieldResult> checkPharmacyFieldUnique({
+    required String field,
+    required String value,
+  });
+
+  Future<Map<String, dynamic>> registerPharmacy(PharmacyRegistrationPayload payload);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -53,5 +63,42 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
     final response = await apiClient.get('/auth/profile', useSessionToken: true) as Map<String, dynamic>;
     return UserModel.fromPharmacyProfile(response, token: t);
+  }
+
+  @override
+  Future<SendVerificationResult> sendPharmacyEmailVerification(String email) async {
+    final response = await apiClient.post(
+      '/auth/send-verification',
+      body: {'email': email.trim()},
+      useSessionToken: false,
+    ) as Map<String, dynamic>;
+    return SendVerificationResult.fromJson(response);
+  }
+
+  @override
+  Future<UniqueFieldResult> checkPharmacyFieldUnique({
+    required String field,
+    required String value,
+  }) async {
+    final response = await apiClient.post(
+      '/auth/check-unique',
+      body: {'field': field, 'value': value.trim()},
+      useSessionToken: false,
+    ) as Map<String, dynamic>;
+    return UniqueFieldResult.fromJson(response);
+  }
+
+  @override
+  Future<Map<String, dynamic>> registerPharmacy(PharmacyRegistrationPayload payload) async {
+    return await apiClient.postMultipart(
+      '/auth/register',
+      fields: payload.toFields(),
+      filePaths: {
+        'pan_document': payload.panDocumentPath,
+        'gst_document': payload.gstDocumentPath,
+        'license_document': payload.licenseDocumentPath,
+      },
+      useSessionToken: false,
+    ) as Map<String, dynamic>;
   }
 }

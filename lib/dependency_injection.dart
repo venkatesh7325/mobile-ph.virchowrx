@@ -22,6 +22,7 @@ import 'presentation/controllers/dashboard_controller.dart';
 import 'presentation/controllers/distributor_controller.dart';
 import 'presentation/controllers/enquiry_controller.dart';
 import 'presentation/controllers/login_controller.dart';
+import 'presentation/controllers/register_controller.dart';
 import 'presentation/controllers/order_controller.dart';
 import 'presentation/controllers/product_controller.dart';
 
@@ -91,6 +92,12 @@ class DependencyInjection {
   static void bindLogin() {
     if (!Get.isRegistered<LoginController>()) {
       Get.lazyPut(() => LoginController(repository: Get.find(), authSession: Get.find()));
+    }
+  }
+
+  static void bindRegister() {
+    if (!Get.isRegistered<RegisterController>()) {
+      Get.lazyPut(() => RegisterController(repository: Get.find()));
     }
   }
 

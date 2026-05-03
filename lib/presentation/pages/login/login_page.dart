@@ -89,8 +89,7 @@ class _LoginPageState extends State<LoginPage> {
   void _handleBiometric() =>
       AppSnackBar.showInfo(context, 'Biometric sign-in not yet implemented');
 
-  void _handleRequestAccount() =>
-      AppSnackBar.showInfo(context, 'Request-account flow not yet implemented');
+  void _handleRequestAccount() => context.push(AppRoutes.register);
 
 // ONLY CHANGED PART: LoginPage build method
 
@@ -280,7 +279,7 @@ class _BrandRow extends StatelessWidget {
               ),
               SizedBox(height: 3),
               Text(
-                'EST. SECURE   •   v2.4',
+                'EST. SECURE',
                 style: TextStyle(
                   fontFamily: 'monospace',
                   fontSize: 10.5,
@@ -482,6 +481,21 @@ class _LoginCard extends StatelessWidget {
                         label: 'Sign in to dashboard',
                         isLoading: controller.isLoading.value,
                         onPressed: onSignIn,
+                      ),
+                    ),
+
+                    const SizedBox(height: 14),
+                    Center(
+                      child: TextButton(
+                        onPressed: onRequestAccount,
+                        child: const Text(
+                          "Don't have an account? Sign up",
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: _teal,
+                          ),
+                        ),
                       ),
                     ),
 

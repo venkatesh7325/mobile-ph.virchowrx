@@ -39,6 +39,7 @@ class ProductsPage extends StatelessWidget {
               return RefreshIndicator(
                 onRefresh: controller.refresh,
                 child: ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   itemCount: controller.filteredProducts.length,
                   itemBuilder: (context, i) {
@@ -313,32 +314,65 @@ class _ProductCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: inStock ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.circle, size: 8, color: inStock ? const Color(0xFF22C55E) : const Color(0xFFEF4444)),
-                      const SizedBox(width: 6),
-                      Text(inStock ? '${product.stock} in stock' : 'Out of stock',
-                          style: TextStyle(color: inStock ? const Color(0xFF15803D) : const Color(0xFFB91C1C), fontSize: 11, fontWeight: FontWeight.bold)),
-                    ],
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: inStock ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.circle, size: 8, color: inStock ? const Color(0xFF22C55E) : const Color(0xFFEF4444)),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              inStock ? '${product.stock} in stock' : 'Out of stock',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: inStock ? const Color(0xFF15803D) : const Color(0xFFB91C1C),
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-                if (inStock && cartItemCount > 0) _buildStepper(cartItemCount)
-                else if (inStock) ElevatedButton(
-                  onPressed: () => cartController.addItem(product),
-                  style: ElevatedButton.styleFrom(backgroundColor: ProductsPage.primaryTeal, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), elevation: 0),
-                  child: const Text('Add to cart'),
-                )
-                else TextButton(
-                      onPressed: () {},
-                      child: const Row(children: [Text('Notify me ', style: TextStyle(color: ProductsPage.primaryTeal)), Icon(Icons.notifications_none, size: 16, color: ProductsPage.primaryTeal)])
+                const SizedBox(width: 8),
+                if (inStock && cartItemCount > 0)
+                  _buildStepper(cartItemCount)
+                else if (inStock)
+                  ElevatedButton(
+                    onPressed: () => cartController.addItem(product),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ProductsPage.primaryTeal,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    child: const Text('Add to cart'),
+                  )
+                else
+                  TextButton(
+                    onPressed: () {},
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('Notify me ', style: TextStyle(color: ProductsPage.primaryTeal)),
+                        Icon(Icons.notifications_none, size: 16, color: ProductsPage.primaryTeal),
+                      ],
+                    ),
                   ),
               ],
             )

@@ -12,6 +12,7 @@ import '../presentation/pages/dashboard/dashboard_page.dart';
 import '../presentation/pages/distributor/distributor_page.dart';
 import '../presentation/pages/enquiry/enquiry_page.dart';
 import '../presentation/pages/login/login_page.dart';
+import '../presentation/pages/register/pharmacy_register_page.dart';
 import '../presentation/pages/orders/orders_page.dart';
 import '../presentation/pages/products/product_details.dart';
 import '../presentation/pages/products/products_page.dart';
@@ -32,12 +33,12 @@ class AppRouter {
     try {
       final loggedIn = Get.find<AuthSession>().token.value.isNotEmpty;
       final loc = state.matchedLocation;
-      final onLogin = loc == AppRoutes.login;
+      final onPublicAuth = loc == AppRoutes.login || loc == AppRoutes.register;
 
-      if (!loggedIn && !onLogin) {
+      if (!loggedIn && !onPublicAuth) {
         return AppRoutes.login;
       }
-      if (loggedIn && onLogin) {
+      if (loggedIn && onPublicAuth) {
         return AppRoutes.dashboard;
       }
       return null;
@@ -65,6 +66,13 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.login,
         builder: (context, state) => const LoginPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.register,
+        builder: (context, state) {
+          DependencyInjection.bindRegister();
+          return const PharmacyRegisterPage();
+        },
       ),
       GoRoute(
         path: AppRoutes.dashboard,
