@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import '../../core/errors/exceptions.dart';
 import '../../core/errors/failures.dart';
 import '../../domain/entities/product_entity.dart';
+import '../../domain/entities/product_image_urls_result.dart';
 import '../../domain/repositories/product_repository.dart';
 import '../datasources/product_remote_datasource.dart';
 
@@ -51,6 +52,26 @@ class ProductRepositoryImpl implements ProductRepository {
     try {
       final result = await remoteDataSource.getCategories();
       return Right(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } catch (e) {
+      return Left(UnexpectedFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, ProductImageUrlsResult>> getProductImageUrls(String productId) async {
+    try {
+      final result = await remoteDataSource.getProductImageUrls(productId);
+      return Right(result);
+    } on ValidationException catch (e) {
+      return Left(ValidationFailure(message: e.message));
+    } on UnauthorizedException catch (e) {
+      return Left(UnauthorizedFailure(message: e.message));
+    } on NotFoundException {
+      return const Right(ProductImageUrlsResult(urls: [], thumbnailUrl: null));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(message: e.message));
     } on ServerException catch (e) {
       return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     } catch (e) {

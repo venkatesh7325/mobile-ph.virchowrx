@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import '../../domain/entities/product_entity.dart';
+import '../../domain/entities/product_image_urls_result.dart';
 import '../../domain/repositories/product_repository.dart';
 
 class ProductController extends GetxController {
@@ -14,6 +15,12 @@ class ProductController extends GetxController {
   final selectedCategory = 'All'.obs;
   final searchQuery = ''.obs;
 
+  /// List thumbnail: prefers API `thumbUrl` via [ProductImageUrlsResult.thumbnailUrl].
+  final catalogThumbnails = RxMap<String, String>();
+
+  /// When [catalogThumbnails] points at a missing `-thumbs/` blob (404), try this URL (e.g. full-size).
+  final catalogThumbnailFallbacks = RxMap<String, String>();
+
   @override
   void onInit() {
     super.onInit();
@@ -25,20 +32,67 @@ class ProductController extends GetxController {
     isLoading.value = true;
     errorMessage.value = null;
 
-    final result = await repository.getProducts();
+    final result = await repository.getProducts(
+      search: searchQuery.value.trim().isEmpty ? null : searchQuery.value.trim(),
+    );
     result.fold(
       (failure) {
         errorMessage.value = failure.message;
         products.clear();
         filteredProducts.clear();
+        catalogThumbnails.clear();
+        catalogThumbnailFallbacks.clear();
       },
       (data) {
         products.value = data;
         _applyFilters();
+        _loadCatalogThumbnails(data);
       },
     );
 
     isLoading.value = false;
+  }
+
+  /// List cell image: API thumbnail when loaded, else catalog [ProductEntity.imageUrl].
+  String? thumbnailUrlFor(ProductEntity p) {
+    final fromApi = catalogThumbnails[p.id];
+    if (fromApi != null && fromApi.isNotEmpty) return fromApi;
+    return p.imageUrl;
+  }
+
+  /// First gallery URL distinct from the list thumb (used after 404 on thumb).
+  String? thumbnailFallbackFor(ProductEntity p) => catalogThumbnailFallbacks[p.id];
+
+  /// Fetches one image per product only when the catalog row had no image URL.
+  Future<void> _loadCatalogThumbnails(List<ProductEntity> list) async {
+    catalogThumbnails.clear();
+    catalogThumbnailFallbacks.clear();
+    for (final p in list) {
+      if (p.id.isEmpty) continue;
+      final hasCatalogImage =
+          (p.imageUrl != null && p.imageUrl!.isNotEmpty) || p.galleryUrls.isNotEmpty;
+      if (hasCatalogImage) continue;
+      final result = await repository.getProductImageUrls(p.id);
+      result.fold((_) {}, (r) {
+        final u = r.thumbnailUrl;
+        if (u != null && u.isNotEmpty) {
+          catalogThumbnails[p.id] = u;
+        }
+        final fb = _firstGalleryUrlDistinctFromThumb(r);
+        if (fb != null && fb.isNotEmpty) {
+          catalogThumbnailFallbacks[p.id] = fb;
+        }
+      });
+    }
+  }
+
+  static String? _firstGalleryUrlDistinctFromThumb(ProductImageUrlsResult r) {
+    final thumb = r.thumbnailUrl;
+    for (final u in r.urls) {
+      if (u.isEmpty) continue;
+      if (thumb == null || thumb.isEmpty || u != thumb) return u;
+    }
+    return null;
   }
 
   Future<void> loadCategories() async {
@@ -56,7 +110,7 @@ class ProductController extends GetxController {
 
   void setSearchQuery(String query) {
     searchQuery.value = query;
-    _applyFilters();
+    loadProducts();
   }
 
   void _applyFilters() {

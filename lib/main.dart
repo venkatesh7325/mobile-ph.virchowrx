@@ -10,17 +10,14 @@ import 'routes/app_router.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load env file
-  await dotenv.load(fileName: '.env',isOptional: true);
+  await dotenv.load(fileName: '.env', isOptional: true);
 
-  // Lock orientation to portrait
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
 
-  // Initialize dependency injection
-  DependencyInjection.init();
+  await DependencyInjection.init();
 
   runApp(const MyApp());
 }

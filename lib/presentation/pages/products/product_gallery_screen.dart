@@ -1,23 +1,79 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
-class ProductGalleryScreen extends StatelessWidget {
+import '../../../domain/entities/product_entity.dart';
+import '../../../domain/repositories/product_repository.dart';
+import '../../widgets/product_network_image.dart';
+
+class ProductGalleryScreen extends StatefulWidget {
   final dynamic product;
-  ProductGalleryScreen({super.key, this.product});
-
-  // State management for the current carousel index
-  final RxInt _currentIndex = 1.obs;
-  final PageController _pageController = PageController(initialPage: 1);
+  const ProductGalleryScreen({super.key, this.product});
 
   static const Color primaryTeal = Color(0xFF168A7F);
   static const Color darkText = Color(0xFF111827);
   static const Color bgLight = Color(0xFFF6FBF9);
 
   @override
+  State<ProductGalleryScreen> createState() => _ProductGalleryScreenState();
+}
+
+class _ProductGalleryScreenState extends State<ProductGalleryScreen> {
+  late PageController _pageController;
+  int _pageIndex = 0;
+
+  /// From catalog first; replaced by `GET /product-images/product/:id` when non-empty.
+  List<String> _displayUrls = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _displayUrls = List<String>.from(_urlsFromEntity());
+    _pageController = PageController();
+    _loadProductImagesFromApi();
+  }
+
+  List<String> _urlsFromEntity() {
+    final p = widget.product;
+    if (p is ProductEntity) {
+      if (p.galleryUrls.isNotEmpty) return p.galleryUrls;
+      if (p.imageUrl != null && p.imageUrl!.isNotEmpty) return [p.imageUrl!];
+    }
+    return [];
+  }
+
+  Future<void> _loadProductImagesFromApi() async {
+    final p = _productEntity;
+    if (p == null || p.id.isEmpty) return;
+    final result = await Get.find<ProductRepository>().getProductImageUrls(p.id);
+    if (!mounted) return;
+    result.fold((_) {}, (r) {
+      if (r.urls.isEmpty) return;
+      _pageController.dispose();
+      _pageController = PageController();
+      setState(() {
+        _displayUrls = r.urls;
+        _pageIndex = 0;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  int get _pageCount => _displayUrls.isEmpty ? 1 : _displayUrls.length;
+
+  ProductEntity? get _productEntity => widget.product is ProductEntity ? widget.product as ProductEntity : null;
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: bgLight,
-      appBar: _buildAppBar(),
+      backgroundColor: ProductGalleryScreen.bgLight,
+      appBar: _buildAppBar(context),
       body: Column(
         children: [
           Expanded(
@@ -41,14 +97,14 @@ class ProductGalleryScreen extends StatelessWidget {
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
-      leading: _buildSquareButton(Icons.chevron_left, () => Get.back()),
+      leading: _buildSquareButton(Icons.chevron_left, () => context.pop()),
       centerTitle: true,
       title: const Text('Gallery',
-          style: TextStyle(color: darkText, fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'serif')),
+          style: TextStyle(color: ProductGalleryScreen.darkText, fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'serif')),
       actions: [
         Padding(
           padding: const EdgeInsets.only(right: 20),
@@ -72,7 +128,7 @@ class ProductGalleryScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.grey.shade200),
               ),
-              child: Icon(icon, color: primaryTeal, size: 20),
+              child: Icon(icon, color: ProductGalleryScreen.primaryTeal, size: 20),
             ),
           ),
           if (badge != null)
@@ -90,16 +146,18 @@ class ProductGalleryScreen extends StatelessWidget {
   }
 
   Widget _buildHeaderInfo() {
+    final p = _productEntity;
+    final title = p?.name ?? 'Product';
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Column(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('PRODUCT IMAGES', style: TextStyle(color: primaryTeal, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
-              Text('Jusgo · 75mg/mL', style: TextStyle(fontFamily: 'serif', fontSize: 24, fontWeight: FontWeight.bold, color: darkText)),
+              const Text('PRODUCT IMAGES', style: TextStyle(color: ProductGalleryScreen.primaryTeal, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+              Text(title, style: const TextStyle(fontFamily: 'serif', fontSize: 24, fontWeight: FontWeight.bold, color: ProductGalleryScreen.darkText)),
             ],
           ),
           _buildAutoToggle(),
@@ -111,7 +169,7 @@ class ProductGalleryScreen extends StatelessWidget {
   Widget _buildAutoToggle() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-      decoration: BoxDecoration(color: darkText, borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(color: ProductGalleryScreen.darkText, borderRadius: BorderRadius.circular(20)),
       child: Row(
         children: [
           const Padding(
@@ -120,7 +178,7 @@ class ProductGalleryScreen extends StatelessWidget {
           ),
           Container(
             padding: const EdgeInsets.all(4),
-            decoration: const BoxDecoration(color: primaryTeal, shape: BoxShape.circle),
+            decoration: const BoxDecoration(color: ProductGalleryScreen.primaryTeal, shape: BoxShape.circle),
             child: const Icon(Icons.pause, color: Colors.white, size: 14),
           )
         ],
@@ -128,7 +186,14 @@ class ProductGalleryScreen extends StatelessWidget {
     );
   }
 
+  Widget _carouselPlaceholder() {
+    return const Center(
+      child: Icon(Icons.medication, size: 100, color: Color(0xFF8B4513)),
+    );
+  }
+
   Widget _buildMainCarousel() {
+    final urls = _displayUrls;
     return Stack(
       alignment: Alignment.center,
       children: [
@@ -140,24 +205,45 @@ class ProductGalleryScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(32),
           ),
           child: PageView.builder(
+            key: ValueKey(urls.join('|')),
             controller: _pageController,
-            onPageChanged: (idx) => _currentIndex.value = idx,
-            itemCount: 5,
+            onPageChanged: (idx) => setState(() => _pageIndex = idx),
+            itemCount: _pageCount,
             itemBuilder: (context, index) {
+              if (urls.isEmpty) return _carouselPlaceholder();
               return Center(
-                child: Image.network(
-                  'https://placeholder.com/medication_box', // Replace with product.imageUrl
-                  height: 180,
-                  errorBuilder: (_, __, ___) => const Icon(Icons.medication, size: 100, color: Color(0xFF8B4513)),
+                child: ProductNetworkImage(
+                  imageUrl: urls[index],
+                  height: 220,
+                  width: MediaQuery.sizeOf(context).width - 80,
+                  fit: BoxFit.contain,
+                  borderRadius: BorderRadius.circular(16),
+                  fallback: _carouselPlaceholder(),
                 ),
               );
             },
           ),
         ),
-        // Navigation Arrows
-        _buildNavArrow(Icons.chevron_left, left: 30, onTap: () => _pageController.previousPage(duration: 300.milliseconds, curve: Curves.ease)),
-        _buildNavArrow(Icons.chevron_right, right: 30, onTap: () => _pageController.nextPage(duration: 300.milliseconds, curve: Curves.ease)),
-        // Page Indicator and Index
+        if (_pageCount > 1) ...[
+          _buildNavArrow(
+            Icons.chevron_left,
+            left: 30,
+            onTap: () {
+              if (_pageIndex > 0) {
+                _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.ease);
+              }
+            },
+          ),
+          _buildNavArrow(
+            Icons.chevron_right,
+            right: 30,
+            onTap: () {
+              if (_pageIndex < _pageCount - 1) {
+                _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.ease);
+              }
+            },
+          ),
+        ],
         Positioned(bottom: 20, child: _buildPageIndicator()),
         Positioned(bottom: 20, right: 40, child: _buildIndexCounter()),
       ],
@@ -179,10 +265,10 @@ class ProductGalleryScreen extends StatelessWidget {
   }
 
   Widget _buildPageIndicator() {
-    return Obx(() => Row(
+    return Row(
       mainAxisSize: MainAxisSize.min,
-      children: List.generate(5, (index) {
-        bool isSelected = _currentIndex.value == index;
+      children: List.generate(_pageCount, (index) {
+        final isSelected = _pageIndex == index;
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 4),
           width: isSelected ? 12 : 6,
@@ -193,64 +279,85 @@ class ProductGalleryScreen extends StatelessWidget {
           ),
         );
       }),
-    ));
+    );
   }
 
   Widget _buildIndexCounter() {
-    return Obx(() => Container(
+    return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(color: Colors.black.withOpacity(0.4), borderRadius: BorderRadius.circular(12)),
-      child: Text('${_currentIndex.value + 1} / 5', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-    ));
+      child: Text('${_pageIndex + 1} / $_pageCount', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+    );
+  }
+
+  Widget _thumbFallback() {
+    return const Center(child: Icon(Icons.image_outlined, color: Color(0xFF8B4513), size: 28));
   }
 
   Widget _buildThumbnailStrip() {
+    final urls = _displayUrls;
     return SizedBox(
       height: 70,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: 5,
+        itemCount: _pageCount,
         itemBuilder: (context, index) {
-          return Obx(() {
-            bool isSelected = _currentIndex.value == index;
-            return GestureDetector(
-              onTap: () => _pageController.jumpToPage(index),
-              child: Container(
-                width: 70,
-                margin: const EdgeInsets.only(right: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFDF4BE).withOpacity(0.4),
-                  borderRadius: BorderRadius.circular(12),
-                  border: isSelected ? Border.all(color: primaryTeal, width: 2) : null,
-                ),
-                child: const Icon(Icons.image, color: Colors.white, size: 24),
+          final isSelected = _pageIndex == index;
+          return GestureDetector(
+            onTap: () {
+              setState(() => _pageIndex = index);
+              _pageController.jumpToPage(index);
+            },
+            child: Container(
+              width: 70,
+              margin: const EdgeInsets.only(right: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFDF4BE).withOpacity(0.4),
+                borderRadius: BorderRadius.circular(12),
+                border: isSelected ? Border.all(color: ProductGalleryScreen.primaryTeal, width: 2) : null,
               ),
-            );
-          });
+              child: urls.isEmpty
+                  ? _thumbFallback()
+                  : ProductNetworkImage(
+                      imageUrl: urls[index],
+                      width: 70,
+                      height: 70,
+                      fit: BoxFit.cover,
+                      borderRadius: BorderRadius.circular(10),
+                      fallback: _thumbFallback(),
+                    ),
+            ),
+          );
         },
       ),
     );
   }
 
   Widget _buildProductSummary() {
+    final p = _productEntity;
+    final currency = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
+    final name = p?.name ?? 'Product';
+    final priceLine = p != null ? currency.format(p.price) : '—';
+    final desc = p?.description ??
+        'Diclofenac Sodium I.P. 75mg/mL — Prefilled Syringe (PFS) for I.M/I.V/S.C injection use.';
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Jusgo', style: TextStyle(fontFamily: 'serif', fontSize: 20, fontWeight: FontWeight.bold, color: darkText)),
-              Text('₹110', style: TextStyle(fontFamily: 'serif', fontSize: 20, fontWeight: FontWeight.bold, color: darkText)),
+              Expanded(
+                child: Text(name, style: const TextStyle(fontFamily: 'serif', fontSize: 20, fontWeight: FontWeight.bold, color: ProductGalleryScreen.darkText)),
+              ),
+              Text(priceLine, style: const TextStyle(fontFamily: 'serif', fontSize: 20, fontWeight: FontWeight.bold, color: ProductGalleryScreen.darkText)),
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            'Diclofenac Sodium I.P. 75mg/mL — Prefilled Syringe (PFS) for I.M/I.V/S.C injection use.',
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 14, height: 1.5),
-          ),
+          Text(desc, style: TextStyle(color: Colors.grey.shade600, fontSize: 14, height: 1.5)),
         ],
       ),
     );
@@ -265,19 +372,25 @@ class ProductGalleryScreen extends StatelessWidget {
         child: Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(colors: [primaryTeal, Color(0xFF0F5A53)]),
+            gradient: const LinearGradient(colors: [ProductGalleryScreen.primaryTeal, Color(0xFF0F5A53)]),
             borderRadius: BorderRadius.circular(16),
           ),
-          child: ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent, padding: const EdgeInsets.symmetric(vertical: 18)),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('Add to cart · ₹110', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                SizedBox(width: 8),
-                Icon(Icons.arrow_forward, color: Colors.white, size: 20),
-              ],
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent, padding: const EdgeInsets.symmetric(vertical: 18)),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _productEntity != null ? 'Add to cart · ${NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0).format(_productEntity!.price)}' : 'Add to cart',
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+                ],
+              ),
             ),
           ),
         ),

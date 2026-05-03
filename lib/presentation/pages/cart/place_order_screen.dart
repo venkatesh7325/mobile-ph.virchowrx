@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+
+import '../../../domain/repositories/order_repository.dart';
+import '../../controllers/cart_controller.dart';
 
 class PlaceOrderScreen extends StatefulWidget {
   const PlaceOrderScreen({super.key});
@@ -10,6 +16,7 @@ class PlaceOrderScreen extends StatefulWidget {
 class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
   int _selectedPayment = 0;
   final TextEditingController _poController = TextEditingController();
+  bool _submitting = false;
 
   static const Color primaryGreen = Color(0xFF0F6E56);
   static const Color accentGreen = Color(0xFF1D9E75);
@@ -21,6 +28,104 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     {'label': 'Manual', 'icon': Icons.account_balance_wallet_outlined},
   ];
 
+  String _paymentMethod() {
+    switch (_selectedPayment) {
+      case 0:
+        return 'credit';
+      case 1:
+        return 'card';
+      default:
+        return 'cash';
+    }
+  }
+
+  String _formatINR(double val) {
+    return NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2).format(val);
+  }
+
+  Future<void> _submit() async {
+    final cart = Get.find<CartController>();
+    final orders = Get.find<OrderRepository>();
+
+    if (cart.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cart is empty')),
+      );
+      return;
+    }
+
+    for (final line in cart.items) {
+      final p = line.product;
+      if (p.catalogId == null || p.distributorId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cart contains items without catalog data. Re-add products from the catalog.'),
+          ),
+        );
+        return;
+      }
+    }
+
+    setState(() => _submitting = true);
+
+    final items = cart.items.map((ci) {
+      final p = ci.product;
+      final qty = ci.quantity.value;
+      final unit = p.price;
+      return {
+        'catalog_id': p.catalogId,
+        'product_id': int.parse(p.id),
+        'distributor_id': p.distributorId,
+        'quantity': qty,
+        'unit_price': unit,
+        'total_price': unit * qty,
+      };
+    }).toList();
+
+    final body = <String, dynamic>{
+      'items': items,
+      'total_amount': cart.total,
+      'payment_method': _paymentMethod(),
+    };
+    final po = _poController.text.trim();
+    if (po.isNotEmpty) {
+      body['po_number'] = po;
+    }
+
+    final result = await orders.placeOrder(body);
+
+    if (!mounted) return;
+    setState(() => _submitting = false);
+
+    result.fold(
+      (failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(failure.message)),
+        );
+      },
+      (_) {
+        cart.clearCart();
+        showDialog<void>(
+          context: context,
+          builder: (_) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Text('Order placed', style: TextStyle(fontWeight: FontWeight.w700)),
+            content: const Text('Your order was sent to the pharmacy backend.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  context.pop();
+                },
+                child: const Text('OK', style: TextStyle(color: primaryGreen)),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     _poController.dispose();
@@ -29,6 +134,8 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cart = Get.find<CartController>();
+
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
@@ -44,7 +151,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                     const SizedBox(height: 12),
                     _buildConfirmTag(),
                     const SizedBox(height: 10),
-                    _buildHeadingRow(),
+                    _buildHeadingRow(cart),
                     const SizedBox(height: 20),
                     _buildPharmacyCard(),
                     const SizedBox(height: 22),
@@ -60,7 +167,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                 ),
               ),
             ),
-            _buildBottomBar(context),
+            _buildBottomBar(context, cart),
           ],
         ),
       ),
@@ -74,7 +181,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _navBtn(
-            onTap: () => Navigator.pop(context),
+            onTap: () => context.pop(),
             child: const Icon(Icons.chevron_left, size: 22, color: primaryGreen),
           ),
           const Text(
@@ -126,55 +233,56 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     );
   }
 
-  Widget _buildHeadingRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        RichText(
-          text: const TextSpan(
-            style: TextStyle(fontSize: 30, color: Color(0xFF0F2D22), height: 1.1),
-            children: [
+  Widget _buildHeadingRow(CartController cart) {
+    return Obx(() {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Expanded(
+            child: Text.rich(
               TextSpan(
-                text: 'Place ',
-                style: TextStyle(fontWeight: FontWeight.w700),
+                style: TextStyle(fontSize: 28, color: Color(0xFF0F2D22), height: 1.1),
+                children: [
+                  TextSpan(text: 'Place ', style: TextStyle(fontWeight: FontWeight.w700)),
+                  TextSpan(
+                    text: 'order',
+                    style: TextStyle(
+                      fontStyle: FontStyle.italic,
+                      fontWeight: FontWeight.w400,
+                      color: primaryGreen,
+                    ),
+                  ),
+                ],
               ),
-              TextSpan(
-                text: 'order',
-                style: TextStyle(
-                  fontStyle: FontStyle.italic,
-                  fontWeight: FontWeight.w400,
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                _formatINR(cart.total),
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
                   color: primaryGreen,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+              Text(
+                '${cart.itemCount} ITEMS',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[500],
+                  letterSpacing: 0.8,
                 ),
               ),
             ],
           ),
-        ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            const Text(
-              '₹1,100',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
-                color: primaryGreen,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-            Text(
-              '10 ITEMS',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[500],
-                letterSpacing: 0.8,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
+        ],
+      );
+    });
   }
 
   Widget _buildPharmacyCard() {
@@ -196,13 +304,13 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
           Container(
             width: 46,
             height: 46,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
                 colors: [Color(0xFF1D9E75), Color(0xFF0F6E56)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.all(Radius.circular(12)),
             ),
             child: const Center(
               child: Text(
@@ -216,28 +324,30 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'City Pharmacy',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A1A1A),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'City Pharmacy',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1A1A1A),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'PH001 · MUMBAI · MAHARASHTRA',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[500],
-                  letterSpacing: 0.5,
+                SizedBox(height: 4),
+                Text(
+                  'PH001 · MUMBAI · MAHARASHTRA',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF888888),
+                    letterSpacing: 0.5,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -263,16 +373,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
             decoration: InputDecoration(
               hintText: 'e.g. PO-2024-1234',
               hintStyle: TextStyle(fontSize: 14, color: Colors.grey[400]),
-
               border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-              errorBorder: InputBorder.none,
-              focusedErrorBorder: InputBorder.none,
-
-              filled: true, // ✅ needed if using fillColor
-              fillColor: Colors.white,
-
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(vertical: 14),
             ),
@@ -288,55 +389,41 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
       children: [
         _fieldLabel('Upload PO Copy', optional: true),
         const SizedBox(height: 8),
-        GestureDetector(
-          onTap: () {},
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: const Color(0xFFCCCCCC),
-                width: 1,
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFCCCCCC), width: 1),
+          ),
+          child: Column(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5F0),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.upload_outlined, size: 22, color: accentGreen),
               ),
-            ),
-            child: Column(
-              children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE8F5F0),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.upload_outlined,
-                    size: 22,
-                    color: accentGreen,
-                  ),
+              const SizedBox(height: 10),
+              const Text(
+                'Drop file or browse',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'PDF · IMAGE · 5MB MAX',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[400],
+                  letterSpacing: 0.6,
                 ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Drop file or browse',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1A1A1A),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'PDF · IMAGE · 5MB MAX',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey[400],
-                    letterSpacing: 0.6,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ],
@@ -373,14 +460,13 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
           child: Row(
             children: List.generate(_paymentTypes.length, (index) {
               final selected = _selectedPayment == index;
-
               return Padding(
                 padding: const EdgeInsets.only(right: 10),
                 child: GestureDetector(
                   onTap: () => setState(() => _selectedPayment = index),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    width: 110, // fixed width = no squeeze
+                    width: 110,
                     padding: const EdgeInsets.symmetric(vertical: 18),
                     decoration: BoxDecoration(
                       color: selected ? primaryGreen : Colors.white,
@@ -392,17 +478,15 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                     child: Column(
                       children: [
                         Icon(
-                          _paymentTypes[index]['icon'],
+                          _paymentTypes[index]['icon'] as IconData,
                           size: 24,
                           color: selected ? Colors.white : const Color(0xFF666666),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          _paymentTypes[index]['label'],
+                          _paymentTypes[index]['label'] as String,
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: selected ? Colors.white : Colors.grey
-                          ),
+                          style: TextStyle(color: selected ? Colors.white : Colors.grey),
                         ),
                       ],
                     ),
@@ -411,7 +495,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
               );
             }),
           ),
-        )
+        ),
       ],
     );
   }
@@ -443,7 +527,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
     );
   }
 
-  Widget _buildBottomBar(BuildContext context) {
+  Widget _buildBottomBar(BuildContext context, CartController cart) {
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 14, 18, 28),
       decoration: BoxDecoration(
@@ -461,7 +545,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
           Expanded(
             flex: 2,
             child: GestureDetector(
-              onTap: () => Navigator.pop(context),
+              onTap: () => context.pop(),
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 decoration: BoxDecoration(
@@ -486,30 +570,7 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
           Expanded(
             flex: 3,
             child: GestureDetector(
-              onTap: () {
-                showDialog(
-                  context: context,
-                  builder: (_) => AlertDialog(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    title: const Text(
-                      '🎉 Order Placed!',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    content: const Text('Your order has been placed successfully.'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text(
-                          'OK',
-                          style: TextStyle(color: primaryGreen),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
+              onTap: _submitting ? null : _submit,
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 decoration: BoxDecoration(
@@ -523,15 +584,26 @@ class _PlaceOrderScreenState extends State<PlaceOrderScreen> {
                     ),
                   ],
                 ),
-                child: const Center(
-                  child: Text(
-                    'Place order · ₹1,100  →',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
+                child: Center(
+                  child: _submitting
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Obx(() {
+                          return Text(
+                            'Place order · ${_formatINR(cart.total)}  →',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          );
+                        }),
                 ),
               ),
             ),

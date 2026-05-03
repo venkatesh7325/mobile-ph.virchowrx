@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:ph_virchowrx/presentation/pages/products/product_details.dart';
 import '../../../core/constants/app_routes.dart';
-import '../../../core/constants/app_strings.dart';
+import '../../../domain/entities/product_entity.dart';
 import '../../controllers/cart_controller.dart';
+import '../../widgets/product_network_image.dart';
 import '../../controllers/product_controller.dart';
 
 class ProductsPage extends StatelessWidget {
@@ -43,12 +43,17 @@ class ProductsPage extends StatelessWidget {
                   itemCount: controller.filteredProducts.length,
                   itemBuilder: (context, i) {
                     final p = controller.filteredProducts[i];
-                    return _ProductCard(
-                      product: p,
-                      cartController: cartController,
-                      // Mapping colors to match UI screenshot based on index or type
-                      accentColor: _getCardColor(i),
-                    );
+                    return Obx(() {
+                      final thumb = controller.thumbnailUrlFor(p);
+                      final thumbFallback = controller.thumbnailFallbackFor(p);
+                      return _ProductCard(
+                        product: p,
+                        cartController: cartController,
+                        accentColor: _getCardColor(i),
+                        catalogImageUrl: thumb,
+                        catalogImageFallbackUrl: thumbFallback,
+                      );
+                    });
                   },
                 ),
               );
@@ -226,11 +231,20 @@ class ProductsPage extends StatelessWidget {
 }
 
 class _ProductCard extends StatelessWidget {
-  final dynamic product; // Replace with your ProductEntity
+  final ProductEntity product;
   final CartController cartController;
   final Color accentColor;
+  /// Prefer first URL from product-images API (via [ProductController.thumbnailUrlFor]).
+  final String? catalogImageUrl;
+  final String? catalogImageFallbackUrl;
 
-  const _ProductCard({required this.product, required this.cartController, required this.accentColor});
+  const _ProductCard({
+    required this.product,
+    required this.cartController,
+    required this.accentColor,
+    this.catalogImageUrl,
+    this.catalogImageFallbackUrl,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -261,10 +275,20 @@ class _ProductCard extends StatelessWidget {
                   onTap: () {
                     context.push(AppRoutes.productGallery, extra: product);
                   },
-                  child: Container(
-                    width: 60, height: 60,
-                    decoration: BoxDecoration(color: accentColor, borderRadius: BorderRadius.circular(16)),
-                    child: Icon(Icons.medication_liquid_sharp, color: Colors.brown.withOpacity(0.4), size: 30),
+                  child: ProductNetworkImage(
+                    imageUrl: catalogImageUrl ?? product.imageUrl,
+                    fallbackImageUrl: catalogImageFallbackUrl,
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
+                    borderRadius: BorderRadius.circular(16),
+                    fallback: Container(
+                      width: 60,
+                      height: 60,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(color: accentColor, borderRadius: BorderRadius.circular(16)),
+                      child: Icon(Icons.medication_liquid_sharp, color: Colors.brown.withOpacity(0.4), size: 30),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),

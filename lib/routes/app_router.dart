@@ -1,7 +1,10 @@
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ph_virchowrx/presentation/pages/cart/place_order_screen.dart';
 import 'package:ph_virchowrx/presentation/pages/products/product_gallery_screen.dart';
 import 'package:ph_virchowrx/presentation/pages/products/product_info_screen.dart';
+import '../core/auth/auth_session.dart';
 import '../core/constants/app_routes.dart';
 import '../dependency_injection.dart';
 import '../presentation/pages/cart/cart_page.dart';
@@ -16,12 +19,48 @@ import '../presentation/pages/products/products_page.dart';
 class AppRouter {
   AppRouter._();
 
+  static String _computeInitialLocation() {
+    try {
+      final session = Get.find<AuthSession>();
+      return session.token.value.isNotEmpty ? AppRoutes.dashboard : AppRoutes.login;
+    } catch (_) {
+      return AppRoutes.login;
+    }
+  }
+
+  static String? _redirect(BuildContext context, GoRouterState state) {
+    try {
+      final loggedIn = Get.find<AuthSession>().token.value.isNotEmpty;
+      final loc = state.matchedLocation;
+      final onLogin = loc == AppRoutes.login;
+
+      if (!loggedIn && !onLogin) {
+        return AppRoutes.login;
+      }
+      if (loggedIn && onLogin) {
+        return AppRoutes.dashboard;
+      }
+      return null;
+    } catch (_) {
+      return AppRoutes.login;
+    }
+  }
+
   static final GoRouter router = GoRouter(
-    initialLocation: AppRoutes.login,
+    initialLocation: _computeInitialLocation(),
+    refreshListenable: Get.find<AuthSession>().authListenable,
+    redirect: _redirect,
     routes: [
       GoRoute(
         path: AppRoutes.root,
-        redirect: (_, __) => AppRoutes.login,
+        redirect: (_, __) {
+          try {
+            final loggedIn = Get.find<AuthSession>().token.value.isNotEmpty;
+            return loggedIn ? AppRoutes.dashboard : AppRoutes.login;
+          } catch (_) {
+            return AppRoutes.login;
+          }
+        },
       ),
       GoRoute(
         path: AppRoutes.login,
@@ -94,10 +133,7 @@ class AppRouter {
       ),
       GoRoute(
         path: AppRoutes.placeOrderScreen,
-        builder: (context, state) {
-          DependencyInjection.bindProducts();
-          return const PlaceOrderScreen();
-        },
+        builder: (context, state) => const PlaceOrderScreen(),
       ),
     ],
   );

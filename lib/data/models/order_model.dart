@@ -15,6 +15,16 @@ class OrderItemModel extends OrderItemEntity {
         price: (json['price'] as num?)?.toDouble() ?? 0.0,
       );
 
+  factory OrderItemModel.fromPharmacyLine(Map<String, dynamic> json) {
+    final product = json['product'] as Map<String, dynamic>?;
+    return OrderItemModel(
+      productId: json['product_id']?.toString() ?? '',
+      productName: product?['name']?.toString() ?? '',
+      quantity: (json['quantity'] as num?)?.toInt() ?? 0,
+      price: (json['unit_price'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
         'product_id': productId,
         'product_name': productName,
@@ -57,44 +67,87 @@ class OrderModel extends OrderEntity {
     );
   }
 
+  factory OrderModel.fromPharmacyOrder(Map<String, dynamic> json) {
+    final items = (json['items'] as List?)
+            ?.map((e) => OrderItemModel.fromPharmacyLine(e as Map<String, dynamic>))
+            .toList() ??
+        <OrderItemModel>[];
+
+    final total = (json['total_amount'] as num?)?.toDouble() ?? 0.0;
+
+    return OrderModel(
+      id: json['id']?.toString() ?? '',
+      orderNumber: json['order_number']?.toString() ?? '',
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.now(),
+      status: _parseStatus(json['status']),
+      items: items,
+      subtotal: total,
+      shipping: 0,
+      tax: 0,
+      total: total,
+      trackingNumber: null,
+    );
+  }
+
   static OrderStatus _parseStatus(dynamic status) {
     switch (status?.toString().toLowerCase()) {
-      case 'processing': return OrderStatus.processing;
-      case 'shipped': return OrderStatus.shipped;
-      case 'delivered': return OrderStatus.delivered;
-      case 'cancelled': return OrderStatus.cancelled;
-      default: return OrderStatus.pending;
+      case 'processing':
+      case 'approved':
+        return OrderStatus.processing;
+      case 'shipped':
+        return OrderStatus.shipped;
+      case 'delivered':
+        return OrderStatus.delivered;
+      case 'cancelled':
+      case 'rejected':
+        return OrderStatus.cancelled;
+      case 'pending':
+        return OrderStatus.pending;
+      default:
+        return OrderStatus.pending;
     }
   }
 
   static List<OrderModel> get sampleList => [
         OrderModel(
-          id: '1', orderNumber: 'ORD-2024-001',
+          id: '1',
+          orderNumber: 'ORD-2024-001',
           createdAt: DateTime.now().subtract(const Duration(days: 2)),
           status: OrderStatus.delivered,
           items: const [
             OrderItemModel(productId: '1', productName: 'Premium Widget A', quantity: 2, price: 1299),
           ],
-          subtotal: 2598, shipping: 100, tax: 259.8, total: 2957.8,
+          subtotal: 2598,
+          shipping: 100,
+          tax: 259.8,
+          total: 2957.8,
         ),
         OrderModel(
-          id: '2', orderNumber: 'ORD-2024-002',
+          id: '2',
+          orderNumber: 'ORD-2024-002',
           createdAt: DateTime.now().subtract(const Duration(days: 1)),
           status: OrderStatus.shipped,
           items: const [
             OrderItemModel(productId: '4', productName: 'Digital Multimeter', quantity: 1, price: 2100),
           ],
-          subtotal: 2100, shipping: 100, tax: 210, total: 2410,
+          subtotal: 2100,
+          shipping: 100,
+          tax: 210,
+          total: 2410,
           trackingNumber: 'TRK789012',
         ),
         OrderModel(
-          id: '3', orderNumber: 'ORD-2024-003',
+          id: '3',
+          orderNumber: 'ORD-2024-003',
           createdAt: DateTime.now(),
           status: OrderStatus.pending,
           items: const [
             OrderItemModel(productId: '6', productName: 'Power Drill 18V', quantity: 1, price: 3500),
           ],
-          subtotal: 3500, shipping: 150, tax: 350, total: 4000,
+          subtotal: 3500,
+          shipping: 150,
+          tax: 350,
+          total: 4000,
         ),
       ];
 }
