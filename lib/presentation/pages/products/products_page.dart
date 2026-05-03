@@ -43,7 +43,11 @@ class ProductsPage extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   itemCount: controller.filteredProducts.length,
                   itemBuilder: (context, i) {
-                    final p = controller.filteredProducts[i];
+                    final list = controller.filteredProducts;
+                    if (i < 0 || i >= list.length) {
+                      return const SizedBox.shrink();
+                    }
+                    final p = list[i];
                     return Obx(() {
                       final thumb = controller.thumbnailUrlFor(p);
                       final thumbFallback = controller.thumbnailFallbackFor(p);
@@ -249,7 +253,6 @@ class _ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currency = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
     final inStock = product.isInStock;
     // Logic to determine if we show the stepper (if already in cart) or Add Button
     final cartItemCount = cartController.getItemCount(product.id);
@@ -306,7 +309,7 @@ class _ProductCard extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(currency.format(product.price), style: const TextStyle(fontFamily: 'serif', fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text(_formatInr(product.price), style: const TextStyle(fontFamily: 'serif', fontSize: 18, fontWeight: FontWeight.bold)),
                     const Text('/ piece', style: TextStyle(color: Colors.grey, fontSize: 10)),
                   ],
                 )
@@ -317,32 +320,30 @@ class _ProductCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: inStock ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.circle, size: 8, color: inStock ? const Color(0xFF22C55E) : const Color(0xFFEF4444)),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              inStock ? '${product.stock} in stock' : 'Out of stock',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: inStock ? const Color(0xFF15803D) : const Color(0xFFB91C1C),
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: inStock ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.circle, size: 8, color: inStock ? const Color(0xFF22C55E) : const Color(0xFFEF4444)),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            inStock ? '${product.stock} in stock' : 'Out of stock',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: inStock ? const Color(0xFF15803D) : const Color(0xFFB91C1C),
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -380,6 +381,14 @@ class _ProductCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static String _formatInr(double price) {
+    try {
+      return NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2).format(price);
+    } catch (_) {
+      return '₹${price.toStringAsFixed(2)}';
+    }
   }
 
   Widget _buildStepper(int count) {

@@ -90,6 +90,10 @@ class _ProductNetworkImageState extends State<ProductNetworkImage> {
       },
       loadingBuilder: (context, child, progress) {
         if (progress == null) return child;
+        final total = progress.expectedTotalBytes;
+        final value = (total != null && total > 0)
+            ? progress.cumulativeBytesLoaded / total
+            : null;
         return SizedBox(
           width: widget.width,
           height: widget.height,
@@ -99,9 +103,7 @@ class _ProductNetworkImageState extends State<ProductNetworkImage> {
               height: 22,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                value: progress.expectedTotalBytes != null
-                    ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
-                    : null,
+                value: value,
               ),
             ),
           ),
@@ -126,8 +128,9 @@ class _ProductNetworkImageState extends State<ProductNetworkImage> {
   }
 
   Widget _clip(Widget child) {
-    if (widget.borderRadius != null) {
-      return ClipRRect(borderRadius: widget.borderRadius!, child: child);
+    final r = widget.borderRadius;
+    if (r != null) {
+      return ClipRRect(borderRadius: r, child: child);
     }
     return child;
   }
