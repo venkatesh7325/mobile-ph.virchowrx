@@ -104,7 +104,7 @@ class _LoginPageState extends State<LoginPage> {
         resizeToAvoidBottomInset: true,
         body: LayoutBuilder(
           builder: (context, constraints) {
-            final cardTop = constraints.maxHeight * 0.28;
+            final cardTop = constraints.maxHeight * 0.22 + 12;
 
             return Stack(
               children: [
@@ -134,8 +134,8 @@ class _LoginPageState extends State<LoginPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _BrandRow(),
-                          SizedBox(height: 20),
-                          _WelcomeHeading(),
+                          const SizedBox(height: 20),
+                          _LoginHeroTagline(),
                         ],
                       ),
                     ),
@@ -294,37 +294,26 @@ class _BrandRow extends StatelessWidget {
   }
 }
 
-class _WelcomeHeading extends StatelessWidget {
-  const _WelcomeHeading();
+class _LoginHeroTagline extends StatelessWidget {
+  const _LoginHeroTagline();
+
+  static const String _text =
+      'Trusted hospitals. Reliable distributors. Seamless medical supplies for hospital pharmacies';
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Welcome',
-          style: TextStyle(
-            fontFamily: 'serif',
-            fontSize: 45,
-            height: 0.95,
-            fontWeight: FontWeight.w400,
-            color: Colors.white,
-            letterSpacing: -2,
-          ),
+    return Padding(
+      padding: const EdgeInsets.only(right: 8, bottom: 8),
+      child: Text(
+        _text,
+        style: TextStyle(
+          fontSize: 14,
+          height: 1.45,
+          fontWeight: FontWeight.w400,
+          color: Colors.white.withOpacity(0.82),
+          letterSpacing: 0.15,
         ),
-        Text(
-          'back.',
-          style: TextStyle(
-            fontFamily: 'serif',
-            fontSize: 45,
-            height: 1.05,
-            fontWeight: FontWeight.w400,
-            fontStyle: FontStyle.italic,
-            color: Colors.white.withOpacity(0.55),
-            letterSpacing: -2,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
