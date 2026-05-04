@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_routes.dart';
 import '../../controllers/cart_controller.dart';
+import '../../widgets/simple_back_app_bar.dart';
 
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
@@ -22,7 +23,38 @@ class CartScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: bgColor,
+      appBar: SimpleBackAppBar.build(
+        context,
+        title: 'Cart',
+        fallbackRoute: AppRoutes.dashboard,
+        actions: [
+          Obx(() {
+            if (cart.isEmpty) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE2F0EB),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${cart.itemCount} items',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: SimpleBackAppBar.teal,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
       body: SafeArea(
+        top: false,
         child: Stack(
           children: [
             Obx(() {
@@ -55,9 +87,7 @@ class CartScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 10),
-                    _buildTopNav(context, cart),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
                     ...cart.items.map((item) => Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: _CartLineCard(
@@ -91,51 +121,6 @@ class CartScreen extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildTopNav(BuildContext context, CartController cart) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        _iconBtn(primaryGreen, Icons.chevron_left, onTap: () => context.pop()),
-        Row(
-          children: [
-            const Text(
-              'Cart',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
-            ),
-            const SizedBox(width: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE2F0EB),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                '${cart.itemCount} items',
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF0F6E56)),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(width: 36),
-      ],
-    );
-  }
-
-  Widget _iconBtn(Color primaryGreen, IconData icon, {VoidCallback? onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: const Color(0xFFE2F0EB),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(icon, size: 20, color: primaryGreen),
       ),
     );
   }

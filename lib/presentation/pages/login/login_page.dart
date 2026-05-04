@@ -29,8 +29,6 @@ const _muted = Color(0xFF6F7E7C);
 const _hint = Color(0xFFA3B0AE);
 const _danger = Color(0xFFD93B3B);
 
-const _encryptedBg = Color(0xFFD4F0E8);
-
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -390,29 +388,23 @@ class _LoginCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Row(
-                      children: [
-                        Text(
-                          'Sign in',
-                          style: TextStyle(
-                            fontFamily: 'serif',
-                            fontSize: 28,
-                            fontWeight: FontWeight.w600,
-                            color: _ink,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        Spacer(),
-                        _EncryptedBadge(),
-                      ],
+                    const Text(
+                      'Sign in',
+                      style: TextStyle(
+                        fontFamily: 'serif',
+                        fontSize: 28,
+                        fontWeight: FontWeight.w600,
+                        color: _ink,
+                        letterSpacing: -0.5,
+                      ),
                     ),
                     const SizedBox(height: 10),
 
-                    const _FieldLabel('Username or Pharmacy Code'),
+                    const _FieldLabel('Username'),
                     const SizedBox(height: 8),
                     _AppTextField(
                       controller: usernameCtrl,
-                      hint: 'PH001 or username',
+                      hint: 'Username', 
                       prefixIcon: Icons.person_outline,
                       textInputAction: TextInputAction.next,
                       validator: Validators.usernameOrPharmacyCode,
@@ -478,7 +470,7 @@ class _LoginCard extends StatelessWidget {
 
                     Obx(
                           () => _PrimaryButton(
-                        label: 'Sign in to dashboard',
+                        label: 'Login',
                         isLoading: controller.isLoading.value,
                         onPressed: onSignIn,
                       ),
@@ -542,47 +534,6 @@ class _LoginCard extends StatelessWidget {
 // -----------------------------------------------------------------------------
 // Reusable card components
 // -----------------------------------------------------------------------------
-
-class _EncryptedBadge extends StatelessWidget {
-  const _EncryptedBadge();
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: _encryptedBg,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _PulseDot(),
-          SizedBox(width: 6),
-          Text(
-            'Encrypted',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: _teal,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PulseDot extends StatelessWidget {
-  const _PulseDot();
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 7,
-      height: 7,
-      decoration: const BoxDecoration(color: _teal, shape: BoxShape.circle),
-    );
-  }
-}
 
 class _FieldLabel extends StatelessWidget {
   final String label;

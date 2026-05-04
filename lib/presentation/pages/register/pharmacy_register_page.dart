@@ -12,6 +12,7 @@ import '../../../core/utils/validators.dart';
 import '../../../domain/entities/pharmacy_registration.dart';
 import '../../controllers/register_controller.dart';
 import '../../widgets/app_states.dart';
+import '../../widgets/simple_back_app_bar.dart';
 
 /// Indian states / UTs for pharmacy address (same set as web portal).
 const _kIndianStates = <String>[
@@ -72,6 +73,7 @@ const _kBorder = Color(0xFFE0E0E0);
 const _kTitle = Color(0xFF111111);
 const _kMuted = Color(0xFF6B7280);
 const _kFieldFill = Color(0xFFFAFAFA);
+const _kTeal = Color(0xFF168A7F);
 
 /// Pharmacy self-registration: multipart `POST /auth/register`, aligned with the web app.
 class PharmacyRegisterPage extends StatefulWidget {
@@ -382,23 +384,106 @@ class _PharmacyRegisterPageState extends State<PharmacyRegisterPage> {
     if (key == 'pan') label = _panLabel;
     if (key == 'gst') label = _gstLabel;
     if (key == 'license') label = _licenseLabel;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-        const SizedBox(height: 6),
-        OutlinedButton(
-          onPressed: () => _pickDoc(key),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: const Color(0xFF168A7F),
-            side: const BorderSide(color: Color(0xFF168A7F)),
+    final hasFile = label != null && label.trim().isNotEmpty;
+    final borderColor = err != null ? Colors.red.shade400 : _kBorder;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: _kTitle),
           ),
-          child: const Text('CHOOSE FILE'),
-        ),
-        if (label != null) Text(label, style: const TextStyle(fontSize: 12, color: _kMuted)),
-        if (err != null) Text(err, style: const TextStyle(fontSize: 12, color: Colors.red)),
-        const SizedBox(height: 12),
-      ],
+          const SizedBox(height: 8),
+          Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () => _pickDoc(key),
+              borderRadius: BorderRadius.circular(10),
+              splashColor: _kTeal.withOpacity(0.08),
+              highlightColor: _kTeal.withOpacity(0.04),
+              child: Ink(
+                decoration: BoxDecoration(
+                  color: _kFieldFill,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: borderColor, width: err != null ? 1.5 : 1),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: hasFile ? _kTeal.withOpacity(0.12) : Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        alignment: Alignment.center,
+                        child: Icon(
+                          hasFile ? Icons.insert_drive_file_rounded : Icons.upload_file_rounded,
+                          color: hasFile ? _kTeal : _kMuted,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              hasFile ? label.trim() : 'No file selected',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: hasFile ? FontWeight.w600 : FontWeight.w500,
+                                color: hasFile ? _kTitle : _kMuted,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'PDF, JPEG, JPG or PNG · up to 5 MB',
+                              style: TextStyle(fontSize: 11, color: _kMuted, height: 1.2),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            hasFile ? 'Replace' : 'Choose file',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: _kTeal,
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          const Icon(Icons.chevron_right_rounded, color: _kTeal, size: 22),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          if (err != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6, left: 4),
+              child: Text(err, style: TextStyle(fontSize: 12, color: Colors.red.shade700)),
+            ),
+          const SizedBox(height: 12),
+        ],
+      ),
     );
   }
 
@@ -416,11 +501,10 @@ class _PharmacyRegisterPageState extends State<PharmacyRegisterPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF3F4F6),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        foregroundColor: _kTitle,
-        title: const Text('Register', style: TextStyle(fontWeight: FontWeight.bold)),
+      appBar: SimpleBackAppBar.build(
+        context,
+        title: 'Register',
+        fallbackRoute: AppRoutes.login,
       ),
       body: Form(
         key: _formKey,
@@ -492,10 +576,29 @@ class _PharmacyRegisterPageState extends State<PharmacyRegisterPage> {
                   const SizedBox(height: 14),
                   DropdownButtonFormField<String>(
                     value: _state,
+                    isExpanded: true,
                     decoration: _decoration('State *'),
-                    hint: const Text('Select state'),
+                    hint: const Text('Select state', overflow: TextOverflow.ellipsis),
                     items: _kIndianStates
-                        .map((s) => DropdownMenuItem(value: s, child: Text(s, overflow: TextOverflow.ellipsis)))
+                        .map(
+                          (s) => DropdownMenuItem<String>(
+                            value: s,
+                            child: Text(s, maxLines: 2, overflow: TextOverflow.ellipsis),
+                          ),
+                        )
+                        .toList(),
+                    selectedItemBuilder: (context) => _kIndianStates
+                        .map(
+                          (s) => Align(
+                            alignment: AlignmentDirectional.centerStart,
+                            child: Text(
+                              s,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                        )
                         .toList(),
                     onChanged: (v) => setState(() => _state = v),
                     validator: (v) => (v == null || v.isEmpty) ? 'State is required' : null,
