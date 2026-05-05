@@ -70,7 +70,7 @@ class ProductController extends GetxController {
     for (final p in list) {
       if (p.id.isEmpty) continue;
       final hasCatalogImage =
-          (p.imageUrl != null && p.imageUrl!.isNotEmpty) || p.galleryUrls.isNotEmpty;
+          (p.imageUrl?.isNotEmpty ?? false) || p.galleryUrls.isNotEmpty;
       if (hasCatalogImage) continue;
       final result = await repository.getProductImageUrls(p.id);
       result.fold((_) {}, (r) {
