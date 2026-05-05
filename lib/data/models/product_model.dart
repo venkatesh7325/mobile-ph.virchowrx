@@ -8,6 +8,9 @@ class ProductModel extends ProductEntity {
     required super.code,
     required super.category,
     required super.price,
+    super.mrp,
+    super.unitLabel,
+    super.availableDistributorCount,
     required super.stock,
     super.imageUrl,
     super.galleryUrls,
@@ -30,6 +33,16 @@ class ProductModel extends ProductEntity {
         return '';
       }(),
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      mrp: (json['mrp'] as num?)?.toDouble() ??
+          (json['mrp_price'] as num?)?.toDouble() ??
+          (json['mrp_amount'] as num?)?.toDouble(),
+      unitLabel: json['unit']?.toString() ??
+          json['unit_label']?.toString() ??
+          json['unit_type']?.toString() ??
+          'piece',
+      availableDistributorCount: (json['available_distributors'] as num?)?.toInt() ??
+          (json['distributor_count'] as num?)?.toInt() ??
+          0,
       stock: (json['stock'] as num?)?.toInt() ?? 0,
       imageUrl: urls.isNotEmpty ? urls.first : null,
       galleryUrls: urls,
@@ -54,6 +67,14 @@ class ProductModel extends ProductEntity {
         (product['unit_price'] as num?)?.toDouble() ??
         0.0;
     final stock = (chosen?['current_stock'] as num?)?.toInt() ?? 0;
+    final mrp = (product['mrp'] as num?)?.toDouble() ??
+        (product['mrp_price'] as num?)?.toDouble() ??
+        (product['mrp_amount'] as num?)?.toDouble() ??
+        (product['unit_price'] as num?)?.toDouble();
+    final unitLabel = product['unit']?.toString() ??
+        product['unit_label']?.toString() ??
+        product['unit_type']?.toString() ??
+        'piece';
 
     final categoryName = (product['category'] as Map<String, dynamic>?)?['name']?.toString();
     final manufacturerName = (product['manufacturer'] as Map<String, dynamic>?)?['name']?.toString();
@@ -66,6 +87,9 @@ class ProductModel extends ProductEntity {
       code: product['sku']?.toString() ?? '',
       category: category,
       price: price,
+      mrp: mrp,
+      unitLabel: unitLabel,
+      availableDistributorCount: distributors.length,
       stock: stock,
       imageUrl: urls.isNotEmpty ? urls.first : null,
       galleryUrls: urls,
@@ -178,6 +202,9 @@ class ProductModel extends ProductEntity {
         'code': code,
         'category': category,
         'price': price,
+        'mrp': mrp,
+        'unit_label': unitLabel,
+        'available_distributor_count': availableDistributorCount,
         'stock': stock,
         'image_url': imageUrl,
         'description': description,
@@ -192,6 +219,9 @@ class ProductModel extends ProductEntity {
         code: entity.code,
         category: entity.category,
         price: entity.price,
+        mrp: entity.mrp,
+        unitLabel: entity.unitLabel,
+        availableDistributorCount: entity.availableDistributorCount,
         stock: entity.stock,
         imageUrl: entity.imageUrl,
         galleryUrls: entity.galleryUrls,

@@ -5,7 +5,14 @@ class ProductEntity extends Equatable {
   final String name;
   final String code;
   final String category;
+  /// Pharmacy/dealer price (used for checkout).
   final double price;
+  /// Optional MRP (if API provides it).
+  final double? mrp;
+  /// Unit label shown in UI (e.g. piece, strip, bottle).
+  final String unitLabel;
+  /// How many distributors currently list this product in the catalog row.
+  final int availableDistributorCount;
   final int stock;
   final String? imageUrl;
   /// Resolved image URLs from API (e.g. `images[]`); first matches [imageUrl] when present.
@@ -22,6 +29,9 @@ class ProductEntity extends Equatable {
     required this.code,
     required this.category,
     required this.price,
+    this.mrp,
+    this.unitLabel = 'piece',
+    this.availableDistributorCount = 0,
     required this.stock,
     this.imageUrl,
     this.galleryUrls = const [],
@@ -35,5 +45,21 @@ class ProductEntity extends Equatable {
 
   @override
   List<Object?> get props =>
-      [id, name, code, category, price, stock, imageUrl, galleryUrls, description, isActive, catalogId, distributorId];
+      [
+        id,
+        name,
+        code,
+        category,
+        price,
+        mrp,
+        unitLabel,
+        availableDistributorCount,
+        stock,
+        imageUrl,
+        galleryUrls,
+        description,
+        isActive,
+        catalogId,
+        distributorId,
+      ];
 }

@@ -12,7 +12,8 @@ class ProductController extends GetxController {
   final products = <ProductEntity>[].obs;
   final filteredProducts = <ProductEntity>[].obs;
   final categories = <String>[].obs;
-  final selectedCategory = 'All'.obs;
+  /// Empty string means "no category filter".
+  final selectedCategory = ''.obs;
   final searchQuery = ''.obs;
 
   /// List thumbnail: prefers API `thumbUrl` via [ProductImageUrlsResult.thumbnailUrl].
@@ -99,7 +100,19 @@ class ProductController extends GetxController {
     final result = await repository.getCategories();
     result.fold(
       (_) => null,
-      (data) => categories.value = data,
+      (data) {
+        final list = data
+            .where((c) => c.trim().isNotEmpty)
+            .where((c) => c.trim().toLowerCase() != 'all')
+            .where((c) => c.trim().toLowerCase() != 'virchow')
+            .toList();
+        categories.value = list;
+        if (selectedCategory.value.isNotEmpty &&
+            !list.contains(selectedCategory.value)) {
+          selectedCategory.value = '';
+          _applyFilters();
+        }
+      },
     );
   }
 
@@ -115,7 +128,7 @@ class ProductController extends GetxController {
 
   void _applyFilters() {
     var list = products.toList();
-    if (selectedCategory.value != 'All') {
+    if (selectedCategory.value.trim().isNotEmpty) {
       list = list.where((p) => p.category == selectedCategory.value).toList();
     }
     if (searchQuery.value.isNotEmpty) {

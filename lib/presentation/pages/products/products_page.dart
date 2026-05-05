@@ -30,7 +30,6 @@ class ProductsPage extends StatelessWidget {
           _buildHeaderSection(controller),
           _buildSearchBar(controller),
           _buildCategoryFilter(controller),
-          const SizedBox(height: 16),
           Expanded(
             child: Obx(() {
               if (controller.isLoading.value && controller.products.isEmpty) {
@@ -176,7 +175,7 @@ class ProductsPage extends StatelessWidget {
 
   Widget _buildSearchBar(ProductController controller) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 6),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -189,7 +188,7 @@ class ProductsPage extends StatelessWidget {
             hintText: 'Search products or SKU...',
             hintStyle: TextStyle(color: Colors.grey.shade400),
             prefixIcon: Icon(Icons.search, color: Colors.grey.shade400),
-            suffixIcon: const Icon(Icons.tune, color: primaryTeal),
+            suffixIcon: const Icon(Icons.search, color: primaryTeal),
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(vertical: 15),
           ),
@@ -256,6 +255,9 @@ class _ProductCard extends StatelessWidget {
     final inStock = product.isInStock;
     // Logic to determine if we show the stepper (if already in cart) or Add Button
     final cartItemCount = cartController.getItemCount(product.id);
+    final unit = product.unitLabel.isNotEmpty ? product.unitLabel : 'piece';
+    final distCount = product.availableDistributorCount > 0 ? product.availableDistributorCount : 1;
+    final mrp = product.mrp ?? product.price;
 
     return GestureDetector(
       onTap: () {
@@ -263,7 +265,7 @@ class _ProductCard extends StatelessWidget {
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
@@ -272,82 +274,69 @@ class _ProductCard extends StatelessWidget {
         ),
         child: Column(
           children: [
+            GestureDetector(
+              onTap: () => context.push(AppRoutes.productGallery, extra: product),
+              child: ProductNetworkImage(
+                imageUrl: catalogImageUrl ?? product.imageUrl,
+                fallbackImageUrl: catalogImageFallbackUrl,
+                width: double.infinity,
+                height: 140,
+                fit: BoxFit.cover,
+                borderRadius: BorderRadius.circular(20),
+                fallback: Container(
+                  height: 140,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(color: accentColor, borderRadius: BorderRadius.circular(20)),
+                  child: Icon(Icons.medication_liquid_sharp, color: Colors.brown.withOpacity(0.4), size: 40),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: ProductsPage.primaryTeal,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Text(
+                product.name,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700, fontFamily: 'serif'),
+              ),
+            ),
+            const SizedBox(height: 12),
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                GestureDetector(
-                  onTap: () {
-                    context.push(AppRoutes.productGallery, extra: product);
-                  },
-                  child: ProductNetworkImage(
-                    imageUrl: catalogImageUrl ?? product.imageUrl,
-                    fallbackImageUrl: catalogImageFallbackUrl,
-                    width: 60,
-                    height: 60,
-                    fit: BoxFit.cover,
-                    borderRadius: BorderRadius.circular(16),
-                    fallback: Container(
-                      width: 60,
-                      height: 60,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(color: accentColor, borderRadius: BorderRadius.circular(16)),
-                      child: Icon(Icons.medication_liquid_sharp, color: Colors.brown.withOpacity(0.4), size: 30),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(product.name, style: const TextStyle(fontFamily: 'serif', fontSize: 18, fontWeight: FontWeight.bold, color: ProductsPage.darkGrey)),
-                      const SizedBox(height: 4),
-                      Text(product.code, style: const TextStyle(color: ProductsPage.mutedText, fontSize: 12)),
-                    ],
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(_formatInr(product.price), style: const TextStyle(fontFamily: 'serif', fontSize: 18, fontWeight: FontWeight.bold)),
-                    const Text('/ piece', style: TextStyle(color: Colors.grey, fontSize: 10)),
-                  ],
-                )
+                Expanded(child: _kv('Unit', unit)),
+                const SizedBox(width: 12),
+                Expanded(child: _kv('MRP', _formatInr(mrp))),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 6),
+            _kv('Available from', '$distCount Distributor${distCount == 1 ? '' : 's'}'),
+            const SizedBox(height: 10),
             Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: inStock ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
+                  child: RichText(
+                    text: TextSpan(
+                      style: const TextStyle(fontSize: 16, fontFamily: 'serif'),
                       children: [
-                        Icon(Icons.circle, size: 8, color: inStock ? const Color(0xFF22C55E) : const Color(0xFFEF4444)),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            inStock ? '${product.stock} in stock' : 'Out of stock',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: inStock ? const Color(0xFF15803D) : const Color(0xFFB91C1C),
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                        const TextSpan(
+                          text: 'Dealer Price: ',
+                          style: TextStyle(color: Color(0xFFB91C1C), fontWeight: FontWeight.w700),
+                        ),
+                        TextSpan(
+                          text: _formatInr(product.price),
+                          style: const TextStyle(color: Color(0xFFB91C1C), fontWeight: FontWeight.w700),
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
                 if (inStock && cartItemCount > 0)
                   _buildStepper(cartItemCount)
                 else if (inStock)
@@ -357,8 +346,9 @@ class _ProductCard extends StatelessWidget {
                       backgroundColor: ProductsPage.primaryTeal,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     ),
-                    child: const Text('Add to cart'),
+                    child: const Text('Add', style: TextStyle(fontWeight: FontWeight.w700)),
                   )
                 else
                   TextButton(
@@ -370,13 +360,37 @@ class _ProductCard extends StatelessWidget {
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('Notify me ', style: TextStyle(color: ProductsPage.primaryTeal)),
+                        Text('Notify', style: TextStyle(color: ProductsPage.primaryTeal, fontWeight: FontWeight.w600)),
+                        SizedBox(width: 2),
                         Icon(Icons.notifications_none, size: 16, color: ProductsPage.primaryTeal),
                       ],
                     ),
                   ),
               ],
-            )
+            ),
+            if ((product.description ?? '').trim().isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                decoration: BoxDecoration(
+                  color: ProductsPage.primaryTeal,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: ProductsPage.primaryTeal.withOpacity(0.18),
+                      blurRadius: 16,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  product.description!.trim(),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white, fontSize: 15, height: 1.35, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -401,6 +415,20 @@ class _ProductCard extends StatelessWidget {
           IconButton(onPressed: () => cartController.addItem(product), icon: const Icon(Icons.add, size: 16, color: ProductsPage.primaryTeal)),
         ],
       ),
+    );
+  }
+
+  Widget _kv(String k, String v) {
+    return Row(
+      children: [
+        Text('$k: ', style: const TextStyle(color: ProductsPage.mutedText, fontSize: 16, height: 1.25)),
+        Expanded(
+          child: Text(
+            v,
+            style: const TextStyle(color: ProductsPage.darkGrey, fontSize: 16, height: 1.25),
+          ),
+        ),
+      ],
     );
   }
 }

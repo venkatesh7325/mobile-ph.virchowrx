@@ -72,13 +72,13 @@ class ProductRemoteDataSourceImpl implements ProductRemoteDataSource {
   Future<List<String>> getCategories() async {
     final response = await apiClient.get('/products/cataloged/brands') as Map<String, dynamic>;
     final raw = response['manufacturers'];
-    if (raw is! List) return ['All'];
+    if (raw is! List) return [];
     final names = raw
         .map((e) => (e as Map<String, dynamic>)['name']?.toString())
         .whereType<String>()
         .where((n) => n.isNotEmpty)
         .toList();
-    return ['All', ...names];
+    return names;
   }
 
   @override
