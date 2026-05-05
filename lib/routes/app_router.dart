@@ -78,6 +78,7 @@ class AppRouter {
         path: AppRoutes.dashboard,
         builder: (context, state) {
           DependencyInjection.bindDashboard();
+          DependencyInjection.bindLogin();
           return const DashboardPage();
         },
       ),

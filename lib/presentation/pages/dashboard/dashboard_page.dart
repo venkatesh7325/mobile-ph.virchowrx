@@ -9,6 +9,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../domain/entities/order_entity.dart';
 import '../../controllers/dashboard_controller.dart';
+import '../../controllers/login_controller.dart';
 import '../../widgets/app_scaffold.dart';
 import '../../widgets/app_states.dart';
 
@@ -18,6 +19,8 @@ class DashboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<DashboardController>();
+    final LoginController? loginController =
+        Get.isRegistered<LoginController>() ? Get.find<LoginController>() : null;
     final currency = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
 
     return AppScaffold(
@@ -43,7 +46,7 @@ class DashboardPage extends StatelessWidget {
               children: [
                 // _buildHeader(),
                 // const SizedBox(height: 24),
-                _buildWelcomeSection(),
+                _buildWelcomeSection(loginController),
                 const SizedBox(height: 18),
                 _buildStatusGrid(context, controller, currency),
                 const SizedBox(height: 22),
@@ -60,7 +63,12 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildWelcomeSection() {
+  Widget _buildWelcomeSection(LoginController? loginController) {
+    final user = loginController?.currentUser.value;
+    final name = (user?.username ?? 'City Pharmacy').trim();
+    final code = (user?.pharmacyCode ?? 'PH001').trim();
+    final initials = name.isNotEmpty ? name.trim().split(RegExp(r'\s+')).take(2).map((s) => s.isNotEmpty ? s[0] : '').join() : 'SP';
+
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -68,45 +76,11 @@ class DashboardPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Good morning,',
+              'Welcome back, $name ($code)',
               style: GoogleFonts.playfairDisplay(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textDark),
-            ),
-            Text(
-              'City Pharmacy',
-              style: GoogleFonts.playfairDisplay(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textDark),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                  color: Colors.white, borderRadius: BorderRadius.circular(20)),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(4)),
-                    child: Text(
-                      'PH001',
-                      style: GoogleFonts.montserrat(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF1F2937)),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text('·   Mumbai · Maharashtra',
-                      style: GoogleFonts.montserrat(
-                          fontSize: 10, color: AppColors.textLight)),
-                ],
+                fontSize: 26,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textDark,
               ),
             ),
           ],
@@ -139,7 +113,7 @@ class DashboardPage extends StatelessWidget {
             // Adding the SP Text in the center
             child: Center(
               child: Text(
-                'SP',
+                initials.toUpperCase(),
                 style: GoogleFonts.montserrat(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,

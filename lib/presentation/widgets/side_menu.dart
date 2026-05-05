@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 // Note: You may not need the 'badges' package if you use standard Containers for pills,
 // but I have kept it for the Cart as per your original logic.
 import 'package:badges/badges.dart' as badges;
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../core/constants/app_routes.dart';
 import '../../core/constants/app_strings.dart';
@@ -128,22 +129,11 @@ class SideMenu extends StatelessWidget {
           ),
           Expanded(
             child: Center(
-              child: RichText(
-                text: TextSpan(
-                  style: const TextStyle(
-                    fontSize: 20,
-                    letterSpacing: 1.2,
-                    color: Colors.white,
-                    fontFamily: 'serif',
-                  ),
-                  children: [
-                    const TextSpan(text: 'VIRCHOW '),
-                    TextSpan(
-                      text: 'Rx',
-                      style: TextStyle(color: accentCyan, fontStyle: FontStyle.italic),
-                    ),
-                  ],
-                ),
+              child: SvgPicture.asset(
+                'assets/images/virchow_rx_logo.svg',
+                height: 34,
+                fit: BoxFit.contain,
+                alignment: Alignment.center,
               ),
             ),
           ),
@@ -154,6 +144,15 @@ class SideMenu extends StatelessWidget {
   }
 
   Widget _buildProfileCard() {
+    final LoginController? loginController =
+        Get.isRegistered<LoginController>() ? Get.find<LoginController>() : null;
+    final user = loginController?.currentUser.value;
+    final name = (user?.username ?? 'City Pharmacy').trim();
+    final code = (user?.pharmacyCode ?? 'PH001').trim();
+    final initials = name.isNotEmpty
+        ? name.split(RegExp(r'\s+')).take(2).map((s) => s.isNotEmpty ? s[0] : '').join()
+        : 'CP';
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(12),
@@ -169,8 +168,14 @@ class SideMenu extends StatelessWidget {
               CircleAvatar(
                 radius: 22,
                 backgroundColor: accentCyan,
-                child: const Text('CP',
-                    style: TextStyle(color: Color(0xFF0B3B36), fontWeight: FontWeight.bold, fontSize: 16)),
+                child: Text(
+                  initials.toUpperCase(),
+                  style: const TextStyle(
+                    color: Color(0xFF0B3B36),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
               ),
               Positioned(
                 bottom: 0,
@@ -192,13 +197,18 @@ class SideMenu extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'City Pharmacy',
-                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600, fontFamily: 'serif'),
+                Text(
+                  name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'serif',
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'PH001 • MUMBAI',
+                  code,
                   style: TextStyle(color: textMuted, fontSize: 10, letterSpacing: 1.2, fontWeight: FontWeight.w600),
                 ),
               ],

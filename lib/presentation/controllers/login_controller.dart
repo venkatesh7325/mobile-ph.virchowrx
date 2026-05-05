@@ -18,6 +18,22 @@ class LoginController extends GetxController {
   final obscurePassword = true.obs;
   final currentUser = Rxn<UserEntity>();
 
+  @override
+  void onInit() {
+    super.onInit();
+    _hydrateFromSession();
+  }
+
+  Future<void> _hydrateFromSession() async {
+    try {
+      if (authSession.token.value.isEmpty) return;
+      final user = await repository.currentUser();
+      currentUser.value = user.fold((_) => null, (u) => u);
+    } catch (_) {
+      // Best-effort only; dashboard/side menu can fall back.
+    }
+  }
+
   void togglePasswordVisibility() =>
       obscurePassword.value = !obscurePassword.value;
 
