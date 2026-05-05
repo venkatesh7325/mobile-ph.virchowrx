@@ -2,6 +2,8 @@ import 'dart:async' as async;
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:path/path.dart' as p;
 
 import '../auth/auth_session.dart';
 import '../env/env.dart';
@@ -97,6 +99,23 @@ class ApiClient {
     }
   }
 
+  MediaType _contentTypeForUploadPath(String path) {
+    final ext = p.extension(path).toLowerCase();
+    switch (ext) {
+      case '.pdf':
+        return MediaType('application', 'pdf');
+      case '.jpg':
+      case '.jpeg':
+        return MediaType('image', 'jpeg');
+      case '.png':
+        return MediaType('image', 'png');
+      default:
+        throw ValidationException(
+          message: 'Only PDF, JPEG, JPG, and PNG files are allowed',
+        );
+    }
+  }
+
   Future<T> _execute<T>(Future<T> Function() request) async {
     try {
       return await request().timeout(Duration(milliseconds: Env.timeout));
@@ -162,7 +181,15 @@ class ApiClient {
         request.fields.addAll(fields);
         for (final e in filePaths.entries) {
           if (e.value.isEmpty) continue;
-          request.files.add(await http.MultipartFile.fromPath(e.key, e.value));
+          final contentType = _contentTypeForUploadPath(e.value);
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              e.key,
+              e.value,
+              contentType: contentType,
+              filename: p.basename(e.value),
+            ),
+          );
         }
         final streamed = await _client.send(request);
         final response = await http.Response.fromStream(streamed);
