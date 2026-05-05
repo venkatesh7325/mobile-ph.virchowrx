@@ -20,6 +20,7 @@ class DashboardController extends GetxController {
   final errorMessage = RxnString();
 
   final totalOrders = 0.obs;
+  final pendingOrders = 0.obs;
   final totalRevenue = 0.0.obs;
   final activeProducts = 0.obs;
   final pendingEnquiries = 0.obs;
@@ -47,6 +48,7 @@ class DashboardController extends GetxController {
         (orders) {
           final list = orders as List<OrderEntity>;
           totalOrders.value = list.length;
+          pendingOrders.value = list.where((o) => o.status == OrderStatus.pending).length;
           totalRevenue.value = list.fold(0.0, (sum, o) => sum + o.total);
           recentOrders.value = list.take(5).toList();
         },

@@ -6,11 +6,9 @@ import 'package:intl/intl.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../domain/entities/order_entity.dart';
 import '../../controllers/dashboard_controller.dart';
-import '../../widgets/app_card.dart';
 import '../../widgets/app_scaffold.dart';
 import '../../widgets/app_states.dart';
 
@@ -46,10 +44,12 @@ class DashboardPage extends StatelessWidget {
                 // _buildHeader(),
                 // const SizedBox(height: 24),
                 _buildWelcomeSection(),
-                const SizedBox(height: 24),
-                _buildActiveOrderValueCard(),
-                const SizedBox(height: 16),
-                _buildStatusGrid(context),
+                const SizedBox(height: 18),
+                _buildStatusGrid(context, controller, currency),
+                const SizedBox(height: 22),
+                _buildQuickActions(context),
+                const SizedBox(height: 18),
+                _buildRecentOrders(controller, currency),
                 const SizedBox(height: 100),
               ],
             ),
@@ -60,48 +60,6 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          IconButton(
-            onPressed: () {
-
-            },
-            icon: const Icon(Icons.menu, color: AppColors.primaryTeal),
-          ),
-          Text(
-            'VIRCHOW Rx',
-            style: GoogleFonts.montserrat(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primaryTeal),
-          ),
-          Stack(
-            children: [
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.shopping_cart_outlined, color: Colors.grey),
-              ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                      color: AppColors.badgeUrgent, shape: BoxShape.circle),
-                  child: const Text('10',
-                      style: TextStyle(color: Colors.white, fontSize: 8)),
-                ),
-              )
-            ],
-          ),
-        ],
-      ),
-    );
-  }
   Widget _buildWelcomeSection() {
     return Stack(
       clipBehavior: Clip.none,
@@ -195,110 +153,201 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildActiveOrderValueCard() {
-    return Stack(
+  Widget _buildQuickActions(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // This container provides the background and fixed height
-        Container(
-          height: 180,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF168A7F), Color(0xFF0C9D91), Color(0xFF8CD8B8)],
+        _sectionHeader('Quick Actions'),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _quickActionCard(
+                context,
+                icon: Icons.inventory_2_outlined,
+                label: 'Browse\nProducts',
+                onTap: () => context.push(AppRoutes.products),
+              ),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              )
+            const SizedBox(width: 12),
+            Expanded(
+              child: _quickActionCard(
+                context,
+                icon: Icons.shopping_cart_outlined,
+                label: 'View\nCart',
+                onTap: () => context.push(AppRoutes.cart),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _quickActionCard(
+                context,
+                icon: Icons.receipt_long_outlined,
+                label: 'View\nOrders',
+                onTap: () => context.push(AppRoutes.orders),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecentOrders(DashboardController controller, NumberFormat currency) {
+    final orders = controller.recentOrders;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('Recent Orders'),
+        const SizedBox(height: 12),
+        if (orders.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: Colors.grey.withOpacity(0.08)),
+            ),
+            child: Text(
+              'No recent orders yet',
+              style: GoogleFonts.montserrat(fontSize: 12, color: AppColors.textLight),
+            ),
+          )
+        else
+          Column(
+            children: [
+              for (final o in orders) ...[
+                _orderTile(o, currency),
+                const SizedBox(height: 10),
+              ],
             ],
           ),
-        ),
-        Positioned.fill(
-          child: Opacity(
-            opacity: 0.15,
-            child: CustomPaint(painter: WavePatternPainter()),
-          ),
-        ),
-        // FIX: Wrap the foreground content in a SizedBox with the same height as the background
-        // so the Spacer() has a boundary to expand into.
-        SizedBox(
-          height: 180,
-          child: Padding(
-            padding: const EdgeInsets.all(20),
+      ],
+    );
+  }
+
+  Widget _orderTile(OrderEntity order, NumberFormat currency) {
+    final date = DateFormat('dd/MM/yyyy').format(order.createdAt);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.grey.withOpacity(0.08)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('ACTIVE ORDER VALUE',
-                        style: GoogleFonts.montserrat(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: 1.2)),
-                    Row(
-                      children: [
-                        const Icon(Icons.trending_up, size: 14, color: AppColors.accentGold),
-                        const SizedBox(width: 4),
-                        Text('+12.4%',
-                            style: GoogleFonts.montserrat(
-                                fontSize: 12, color: Colors.white)),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
                 Text(
-                  '₹1,24,500.00',
-                  style: GoogleFonts.playfairDisplay(
-                      fontSize: 40,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white),
+                  'Order #${order.orderNumber}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.montserrat(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textDark,
+                  ),
                 ),
-                const Spacer(), // Now this won't crash because it's inside a 180px box
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        _buildWeekCompareCol('THIS WEEK', '₹89,200'),
-                        const SizedBox(width: 24),
-                        _buildWeekCompareCol('LAST WEEK', '₹79,300'),
-                      ],
-                    ),
-                    SizedBox(
-                      width: 80,
-                      height: 30,
-                      child: CustomPaint(painter: SparklinePainter()),
-                    ),
-                  ],
+                const SizedBox(height: 2),
+                Text(
+                  '${currency.format(order.total)} · $date',
+                  style: GoogleFonts.montserrat(fontSize: 11, color: AppColors.textLight),
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 10),
+          _statusPill(order.status),
+        ],
+      ),
+    );
+  }
+
+  Widget _statusPill(OrderStatus status) {
+    final label = status.name[0].toUpperCase() + status.name.substring(1);
+    final bool isPending = status == OrderStatus.pending;
+    final bg = isPending ? AppColors.badgeUrgentBg : AppColors.primaryTeal.withOpacity(0.10);
+    final fg = isPending ? AppColors.badgeUrgent : AppColors.primaryTeal;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
+      child: Text(
+        label,
+        style: GoogleFonts.montserrat(fontSize: 10, fontWeight: FontWeight.w700, color: fg),
+      ),
+    );
+  }
+
+  Widget _sectionHeader(String title) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            title.toUpperCase(),
+            style: GoogleFonts.montserrat(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.2,
+              color: AppColors.textLight,
+            ),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildWeekCompareCol(String title, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: GoogleFonts.montserrat(fontSize: 9, color: Colors.white70)),
-        Text(value,
-            style: GoogleFonts.montserrat(
-                fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
-      ],
+  Widget _quickActionCard(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        height: 86,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.primaryTeal,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primaryTeal.withOpacity(0.16),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Icon(icon, color: Colors.white, size: 22),
+            Text(
+              label,
+              style: GoogleFonts.montserrat(
+                fontSize: 11,
+                height: 1.15,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildStatusGrid(BuildContext context) {
+  Widget _buildStatusGrid(
+    BuildContext context,
+    DashboardController controller,
+    NumberFormat currency,
+  ) {
     return GridView.count(
       // Keep these two properties to avoid "infinite height" errors
       shrinkWrap: true,
@@ -308,14 +357,38 @@ class DashboardPage extends StatelessWidget {
       mainAxisSpacing: 16,
       childAspectRatio: 1.1,
       children: [
-        _buildGridCard(AppColors.gridIconBlue, Icons.view_in_ar_outlined, '247',
-            'Total orders', '+24', AppColors.primaryTeal),
-        _buildGridCard(AppColors.gridIconGold, Icons.access_time_outlined, '3',
-            'Pending', 'Urgent', AppColors.accentGold),
-        _buildGridCard(AppColors.gridIconBlue, Icons.link, '1,420', 'In stock',
-            'SKUs', AppColors.primaryTeal),
-        _buildGridCard(AppColors.gridIconPurple, Icons.inbox_outlined, '8',
-            'Distributors', null, const Color(0xFF6B7280)),
+        _buildGridCard(
+          AppColors.gridIconBlue,
+          Icons.shopping_bag_outlined,
+          controller.totalOrders.value.toString(),
+          'Total Orders',
+          null,
+          AppColors.primaryTeal,
+        ),
+        _buildGridCard(
+          AppColors.gridIconGold,
+          Icons.access_time_outlined,
+          controller.pendingOrders.value.toString(),
+          'Pending Orders',
+          null,
+          AppColors.accentGold,
+        ),
+        _buildGridCard(
+          AppColors.gridIconBlue,
+          Icons.inventory_2_outlined,
+          controller.activeProducts.value.toString(),
+          'Available Products',
+          null,
+          AppColors.primaryTeal,
+        ),
+        _buildGridCard(
+          AppColors.gridIconPurple,
+          Icons.currency_rupee_outlined,
+          currency.format(controller.totalRevenue.value),
+          'Total Value',
+          null,
+          const Color(0xFF6B7280),
+        ),
       ],
     );
   }
@@ -405,40 +478,3 @@ class DashboardPage extends StatelessWidget {
     );
   }
 }
-
-class WavePatternPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 1.0
-      ..style = PaintingStyle.stroke;
-    for (double r = 50; r < size.width * 1.5; r += 40) {
-      canvas.drawCircle(Offset(size.width * 0.8, size.height * 0.2), r, paint);
-    }
-  }
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class SparklinePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 2.0
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-    final path = Path();
-    path.moveTo(0, size.height * 0.7);
-    path.lineTo(size.width * 0.2, size.height * 0.8);
-    path.lineTo(size.width * 0.4, size.height * 0.4);
-    path.lineTo(size.width * 0.6, size.height * 0.6);
-    path.lineTo(size.width * 0.8, size.height * 0.2);
-    path.lineTo(size.width, size.height * 0.3);
-    canvas.drawPath(path, paint);
-  }
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
