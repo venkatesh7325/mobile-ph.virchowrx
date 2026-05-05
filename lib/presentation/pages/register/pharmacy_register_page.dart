@@ -762,11 +762,19 @@ class _PharmacyRegisterPageState extends State<PharmacyRegisterPage> {
                       height: 48,
                       child: ElevatedButton(
                         onPressed: _controller.isLoading.value ? null : _submit,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFE5E7EB),
-                          foregroundColor: const Color(0xFF4B5563),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        style: ButtonStyle(
+                          elevation: const WidgetStatePropertyAll(0),
+                          shape: WidgetStatePropertyAll(
+                            RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          backgroundColor: WidgetStateProperty.resolveWith((states) {
+                            if (states.contains(WidgetState.disabled)) return const Color(0xFFE5E7EB);
+                            return _kTeal;
+                          }),
+                          foregroundColor: WidgetStateProperty.resolveWith((states) {
+                            if (states.contains(WidgetState.disabled)) return const Color(0xFF4B5563);
+                            return Colors.white;
+                          }),
                         ),
                         child: _controller.isLoading.value
                             ? const SizedBox(
