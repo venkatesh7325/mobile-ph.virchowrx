@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/constants/app_routes.dart';
+import '../../widgets/simple_back_app_bar.dart';
+
 // ─────────────────────────────────────────────
 // DATA MODELS
 // ─────────────────────────────────────────────
@@ -99,71 +102,56 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _kBgColor,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildTopBar(),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(14),
-                itemCount: _orders.length,
-                itemBuilder: (ctx, i) => _OrderCard(
-                  order: _orders[i],
-                  onViewDetails: () => _showOrderDetails(_orders[i]),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTopBar() {
-    return Container(
-      width: double.infinity,
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const Flexible(
-            child: Text(
-              'My Orders',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Color(0xFF111111)),
-            ),
-          ),
-          // ⚠️ NO OutlinedButton — using plain GestureDetector to avoid any
-          //    custom OutlinedButtonTheme (e.g. with minimumSize: infinity)
-          //    set in your MaterialApp theme.
-          GestureDetector(
-            onTap: () => setState(() {}),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
+      appBar: SimpleBackAppBar.build(
+        context,
+        title: 'My Orders',
+        fallbackRoute: AppRoutes.dashboard,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Center(
+              child: InkWell(
+                onTap: () => setState(() {}),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFCCDDEE), width: 1.2),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.refresh_rounded, size: 16, color: _kBlueAccent),
-                  SizedBox(width: 6),
-                  Text(
-                    'REFRESH',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: _kBlueAccent,
-                      letterSpacing: 0.5,
-                    ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFCCDDEE), width: 1.2),
                   ),
-                ],
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.refresh_rounded, size: 16, color: _kBlueAccent),
+                      SizedBox(width: 6),
+                      Text(
+                        'REFRESH',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: _kBlueAccent,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
         ],
+      ),
+      body: SafeArea(
+        top: false,
+        child: ListView.builder(
+          padding: const EdgeInsets.all(14),
+          itemCount: _orders.length,
+          itemBuilder: (ctx, i) => _OrderCard(
+            order: _orders[i],
+            onViewDetails: () => _showOrderDetails(_orders[i]),
+          ),
+        ),
       ),
     );
   }

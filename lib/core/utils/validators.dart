@@ -8,7 +8,7 @@ class Validators {
   ///  • Plain alphanumeric usernames, 3–32 chars, may contain . _ -
   static String? usernameOrPharmacyCode(String? value) {
     final v = value?.trim() ?? '';
-    if (v.isEmpty) return 'Username or pharmacy code is required';
+    if (v.isEmpty) return 'Username is required';
 
     final pharmacyCodeRegex = RegExp(r'^PH\d{3,}$', caseSensitive: false);
     if (pharmacyCodeRegex.hasMatch(v)) return null;

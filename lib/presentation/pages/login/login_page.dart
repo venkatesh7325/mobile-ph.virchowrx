@@ -29,8 +29,6 @@ const _muted = Color(0xFF6F7E7C);
 const _hint = Color(0xFFA3B0AE);
 const _danger = Color(0xFFD93B3B);
 
-const _encryptedBg = Color(0xFFD4F0E8);
-
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -106,7 +104,7 @@ class _LoginPageState extends State<LoginPage> {
         resizeToAvoidBottomInset: true,
         body: LayoutBuilder(
           builder: (context, constraints) {
-            final cardTop = constraints.maxHeight * 0.28;
+            final cardTop = constraints.maxHeight * 0.22 + 12;
 
             return Stack(
               children: [
@@ -136,8 +134,8 @@ class _LoginPageState extends State<LoginPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _BrandRow(),
-                          SizedBox(height: 20),
-                          _WelcomeHeading(),
+                          const SizedBox(height: 20),
+                          _LoginHeroTagline(),
                         ],
                       ),
                     ),
@@ -296,37 +294,26 @@ class _BrandRow extends StatelessWidget {
   }
 }
 
-class _WelcomeHeading extends StatelessWidget {
-  const _WelcomeHeading();
+class _LoginHeroTagline extends StatelessWidget {
+  const _LoginHeroTagline();
+
+  static const String _text =
+      'Trusted hospitals. Reliable distributors. Seamless medical supplies for hospital pharmacies';
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Welcome',
-          style: TextStyle(
-            fontFamily: 'serif',
-            fontSize: 45,
-            height: 0.95,
-            fontWeight: FontWeight.w400,
-            color: Colors.white,
-            letterSpacing: -2,
-          ),
+    return Padding(
+      padding: const EdgeInsets.only(right: 8, bottom: 8),
+      child: Text(
+        _text,
+        style: TextStyle(
+          fontSize: 14,
+          height: 1.45,
+          fontWeight: FontWeight.w400,
+          color: Colors.white.withOpacity(0.82),
+          letterSpacing: 0.15,
         ),
-        Text(
-          'back.',
-          style: TextStyle(
-            fontFamily: 'serif',
-            fontSize: 45,
-            height: 1.05,
-            fontWeight: FontWeight.w400,
-            fontStyle: FontStyle.italic,
-            color: Colors.white.withOpacity(0.55),
-            letterSpacing: -2,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -390,29 +377,23 @@ class _LoginCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Row(
-                      children: [
-                        Text(
-                          'Sign in',
-                          style: TextStyle(
-                            fontFamily: 'serif',
-                            fontSize: 28,
-                            fontWeight: FontWeight.w600,
-                            color: _ink,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        Spacer(),
-                        _EncryptedBadge(),
-                      ],
+                    const Text(
+                      'Sign in',
+                      style: TextStyle(
+                        fontFamily: 'serif',
+                        fontSize: 28,
+                        fontWeight: FontWeight.w600,
+                        color: _ink,
+                        letterSpacing: -0.5,
+                      ),
                     ),
                     const SizedBox(height: 10),
 
-                    const _FieldLabel('Username or Pharmacy Code'),
+                    const _FieldLabel('Username'),
                     const SizedBox(height: 8),
                     _AppTextField(
                       controller: usernameCtrl,
-                      hint: 'PH001 or username',
+                      hint: 'Username', 
                       prefixIcon: Icons.person_outline,
                       textInputAction: TextInputAction.next,
                       validator: Validators.usernameOrPharmacyCode,
@@ -478,7 +459,7 @@ class _LoginCard extends StatelessWidget {
 
                     Obx(
                           () => _PrimaryButton(
-                        label: 'Sign in to dashboard',
+                        label: 'Login',
                         isLoading: controller.isLoading.value,
                         onPressed: onSignIn,
                       ),
@@ -542,47 +523,6 @@ class _LoginCard extends StatelessWidget {
 // -----------------------------------------------------------------------------
 // Reusable card components
 // -----------------------------------------------------------------------------
-
-class _EncryptedBadge extends StatelessWidget {
-  const _EncryptedBadge();
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: _encryptedBg,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _PulseDot(),
-          SizedBox(width: 6),
-          Text(
-            'Encrypted',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: _teal,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PulseDot extends StatelessWidget {
-  const _PulseDot();
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 7,
-      height: 7,
-      decoration: const BoxDecoration(color: _teal, shape: BoxShape.circle),
-    );
-  }
-}
 
 class _FieldLabel extends StatelessWidget {
   final String label;
