@@ -28,6 +28,8 @@ class SideMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveRoute =
+        currentRoute.trim().isEmpty ? AppRoutes.products : currentRoute;
     return Drawer(
       backgroundColor: bgColor,
       width: MediaQuery.of(context).size.width * 0.85, // Typical width for this design
@@ -49,25 +51,25 @@ class SideMenu extends StatelessWidget {
                 children: [
                   _SectionHeader(title: 'BROWSE'),
                   _MenuItem(
-                    icon: Icons.bar_chart,
-                    label: AppStrings.dashboard, // or 'Dashboard'
-                    route: AppRoutes.dashboard,
-                    currentRoute: currentRoute,
-                    onTap: () => _navigate(context, AppRoutes.dashboard),
-                  ),
-                  _MenuItem(
                     icon: Icons.grid_view_rounded,
-                    label: AppStrings.products, // or 'Catalog'
+                    label: AppStrings.products, // Default
                     route: AppRoutes.products,
-                    currentRoute: currentRoute,
+                    currentRoute: effectiveRoute,
                     trailing: Text('1.4K', style: TextStyle(color: textMuted, fontSize: 12)),
                     onTap: () => _navigate(context, AppRoutes.products),
+                  ),
+                  _MenuItem(
+                    icon: Icons.bar_chart,
+                    label: AppStrings.dashboard,
+                    route: AppRoutes.dashboard,
+                    currentRoute: effectiveRoute,
+                    onTap: () => _navigate(context, AppRoutes.dashboard),
                   ),
                   _MenuItem(
                     icon: Icons.explore_outlined,
                     label: AppStrings.findDistributor, // or 'Find distributor'
                     route: AppRoutes.findDistributor,
-                    currentRoute: currentRoute,
+                    currentRoute: effectiveRoute,
                     trailing: Text('8', style: TextStyle(color: textMuted, fontSize: 12)),
                     onTap: () => _navigate(context, AppRoutes.findDistributor),
                   ),
@@ -77,7 +79,7 @@ class SideMenu extends StatelessWidget {
                     icon: Icons.inventory_2_outlined,
                     label: AppStrings.orders, // or 'Orders'
                     route: AppRoutes.orders,
-                    currentRoute: currentRoute,
+                    currentRoute: effectiveRoute,
                     trailing: _buildPendingPill('3 pending'),
                     onTap: () => _navigate(context, AppRoutes.orders),
                   ),
@@ -85,12 +87,12 @@ class SideMenu extends StatelessWidget {
                     icon: Icons.mail_outline,
                     label: AppStrings.enquiry, // or 'Enquiries'
                     route: AppRoutes.enquiry,
-                    currentRoute: currentRoute,
+                    currentRoute: effectiveRoute,
                     trailing: Text('2', style: TextStyle(color: textMuted, fontSize: 12)),
                     onTap: () => _navigate(context, AppRoutes.enquiry),
                   ),
                   _CartMenuItem(
-                    currentRoute: currentRoute,
+                    currentRoute: effectiveRoute,
                     onTap: () => _navigate(context, AppRoutes.cart),
                   ),
                 ],
@@ -104,11 +106,8 @@ class SideMenu extends StatelessWidget {
   }
 
   void _navigate(BuildContext context, String route) {
-
-    if (currentRoute != route) {
-     // context.go(route);
-      context.push(route);
-    }
+    Navigator.pop(context);
+    if (currentRoute != route) context.push(route);
   }
 
   Widget _buildTopHeader(BuildContext context) {

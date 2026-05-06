@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 
@@ -90,6 +91,8 @@ class _PharmacyRegisterPageState extends State<PharmacyRegisterPage> {
   final _licenseCtrl = TextEditingController();
   final _pharmaNameCtrl = TextEditingController();
   final _addressCtrl = TextEditingController();
+  final _latitudeCtrl = TextEditingController();
+  final _longitudeCtrl = TextEditingController();
   final _cityCtrl = TextEditingController();
   final _pincodeCtrl = TextEditingController();
   final _pharmaPhoneCtrl = TextEditingController();
@@ -112,6 +115,7 @@ class _PharmacyRegisterPageState extends State<PharmacyRegisterPage> {
 
   final Map<String, String> _uniqueErrors = {};
   final Map<String, Timer> _debouncers = {};
+  bool _fetchingLocation = false;
 
   String? _panPath;
   String? _gstPath;
@@ -135,6 +139,8 @@ class _PharmacyRegisterPageState extends State<PharmacyRegisterPage> {
     _licenseCtrl.dispose();
     _pharmaNameCtrl.dispose();
     _addressCtrl.dispose();
+    _latitudeCtrl.dispose();
+    _longitudeCtrl.dispose();
     _cityCtrl.dispose();
     _pincodeCtrl.dispose();
     _pharmaPhoneCtrl.dispose();
@@ -151,6 +157,62 @@ class _PharmacyRegisterPageState extends State<PharmacyRegisterPage> {
     _phoneCtrl.dispose();
     _verificationCodeCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _getLocation() async {
+    if (_fetchingLocation) return;
+    setState(() => _fetchingLocation = true);
+    try {
+      // 1) Make sure Location Services are ON
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        await Geolocator.openLocationSettings();
+        AppSnackBar.showError(context, 'Please enable location services');
+        return;
+      }
+
+      // 2) Check / Request permission on button click
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        if (permission == LocationPermission.deniedForever) {
+          await Geolocator.openAppSettings();
+        }
+        AppSnackBar.showError(context, 'Location permission denied');
+        return;
+      }
+
+      Position? pos;
+      try {
+        pos = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        );
+      } catch (_) {
+        // Emulator sometimes fails to acquire a fresh fix; try last known.
+        pos = await Geolocator.getLastKnownPosition();
+      }
+
+      if (pos == null) {
+        AppSnackBar.showError(
+          context,
+          'Could not fetch location. Set a mock location in the emulator and try again.',
+        );
+        return;
+      }
+      if (!mounted) return;
+      setState(() {
+        _latitudeCtrl.text = pos!.latitude.toStringAsFixed(6);
+        _longitudeCtrl.text = pos.longitude.toStringAsFixed(6);
+      });
+    } catch (e) {
+      if (!mounted) return;
+      AppSnackBar.showError(context, 'Could not fetch location. Set a mock location in the emulator and try again.');
+    } finally {
+      if (mounted) setState(() => _fetchingLocation = false);
+    }
   }
 
   void _debounceUnique(String formKey, String value) {
@@ -289,6 +351,8 @@ class _PharmacyRegisterPageState extends State<PharmacyRegisterPage> {
     String? formKeyUnique,
     int? maxLength,
     String? helper,
+    bool enabled = true,
+    bool readOnly = false,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -299,6 +363,8 @@ class _PharmacyRegisterPageState extends State<PharmacyRegisterPage> {
           maxLength: maxLength,
           keyboardType: keyboardType,
           inputFormatters: inputFormatters,
+          enabled: enabled,
+          readOnly: readOnly,
           onChanged: formKeyUnique != null ? (v) => _debounceUnique(formKeyUnique, v) : null,
           onEditingComplete: formKeyUnique != null
               ? () => _blurUnique(formKeyUnique, controller.text)
@@ -318,6 +384,11 @@ class _PharmacyRegisterPageState extends State<PharmacyRegisterPage> {
 
     if (!_verificationSent || _verificationCodeCtrl.text.trim().isEmpty) {
       AppSnackBar.showError(context, 'Please verify pharmacy email and enter the code');
+      return;
+    }
+
+    if (_latitudeCtrl.text.trim().isEmpty || _longitudeCtrl.text.trim().isEmpty) {
+      AppSnackBar.showError(context, 'Please fetch location (Latitude & Longitude) before submitting');
       return;
     }
 
@@ -566,6 +637,55 @@ class _PharmacyRegisterPageState extends State<PharmacyRegisterPage> {
                     label: 'Pharmacy Address *',
                     validator: (v) => Validators.required(v, 'Address'),
                     maxLines: 3,
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 46,
+                    child: OutlinedButton.icon(
+                      onPressed: _fetchingLocation ? null : _getLocation,
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: _kTeal.withOpacity(0.45)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      icon: _fetchingLocation
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: _kTeal),
+                            )
+                          : const Icon(Icons.my_location, color: _kTeal, size: 18),
+                      label: Text(
+                        _fetchingLocation ? 'Fetching...' : 'Get location',
+                        style: const TextStyle(color: _kTeal, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _outlineField(
+                          controller: _latitudeCtrl,
+                          label: 'Latitude *',
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                          enabled: true,
+                          readOnly: false,
+                          validator: (v) => Validators.required(v, 'Latitude'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _outlineField(
+                          controller: _longitudeCtrl,
+                          label: 'Longitude *',
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                          enabled: true,
+                          readOnly: false,
+                          validator: (v) => Validators.required(v, 'Longitude'),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 14),
                   _outlineField(

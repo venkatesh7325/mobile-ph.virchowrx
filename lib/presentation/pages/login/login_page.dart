@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 
@@ -72,7 +73,7 @@ class _LoginPageState extends State<LoginPage> {
 
     if (ok) {
       AppSnackBar.showSuccess(context, 'Signed in successfully');
-      context.go(AppRoutes.dashboard);
+      context.go(AppRoutes.products);
     } else {
       AppSnackBar.showError(
         context,
@@ -134,8 +135,6 @@ class _LoginPageState extends State<LoginPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _BrandRow(),
-                          const SizedBox(height: 20),
-                          _LoginHeroTagline(),
                         ],
                       ),
                     ),
@@ -164,6 +163,41 @@ class _LoginPageState extends State<LoginPage> {
                         onForgotPassword: _handleForgotPassword,
                         onBiometric: _handleBiometric,
                         onRequestAccount: _handleRequestAccount,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Logo above the login card
+                Positioned(
+                  top: cardTop - 44,
+                  left: 0,
+                  right: 0,
+                  child: IgnorePointer(
+                    child: Center(
+                      child: SvgPicture.asset(
+                        'assets/images/virchow_rx_logo.svg',
+                        height: 34,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Bottom footer: tagline
+                const Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: SafeArea(
+                    top: false,
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(24, 0, 24, 18),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _LoginHeroTagline(),
+                        ],
                       ),
                     ),
                   ),
@@ -282,7 +316,7 @@ class _BrandRow extends StatelessWidget {
                   fontFamily: 'monospace',
                   fontSize: 10.5,
                   fontWeight: FontWeight.w400,
-                  color: Color(0xFF8FB5B0),
+                  color: Colors.white,
                   letterSpacing: 1.2,
                 ),
               ),
@@ -473,8 +507,9 @@ class _LoginCard extends StatelessWidget {
                           "Don't have an account? Sign up",
                           style: TextStyle(
                             fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: _teal,
+                            fontWeight: FontWeight.w900,
+                            fontStyle: FontStyle.italic,
+                            color: Colors.black,
                           ),
                         ),
                       ),

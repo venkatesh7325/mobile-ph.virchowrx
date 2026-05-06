@@ -39,7 +39,7 @@ class AppRouter {
         return AppRoutes.login;
       }
       if (loggedIn && onPublicAuth) {
-        return AppRoutes.dashboard;
+        return AppRoutes.products;
       }
       return null;
     } catch (_) {
@@ -57,7 +57,7 @@ class AppRouter {
         redirect: (_, __) {
           try {
             final loggedIn = Get.find<AuthSession>().token.value.isNotEmpty;
-            return loggedIn ? AppRoutes.dashboard : AppRoutes.login;
+            return loggedIn ? AppRoutes.products : AppRoutes.login;
           } catch (_) {
             return AppRoutes.login;
           }
@@ -78,7 +78,6 @@ class AppRouter {
         path: AppRoutes.dashboard,
         builder: (context, state) {
           DependencyInjection.bindDashboard();
-          DependencyInjection.bindLogin();
           return const DashboardPage();
         },
       ),
@@ -86,6 +85,7 @@ class AppRouter {
         path: AppRoutes.products,
         builder: (context, state) {
           DependencyInjection.bindProducts();
+          DependencyInjection.bindLogin();
           return const ProductsPage();
         },
       ),

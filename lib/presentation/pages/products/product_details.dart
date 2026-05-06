@@ -29,7 +29,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _heroUrls = _heroImageUrlsFromEntity(_productEntity());
+    _heroUrls = _sanitizeHeroUrls(_heroImageUrlsFromEntity(_productEntity()));
     _loadProductImagesFromApi();
   }
 
@@ -39,8 +39,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final result = await Get.find<ProductRepository>().getProductImageUrls(p.id);
     if (!mounted) return;
     result.fold((_) {}, (r) {
-      if (r.urls.isNotEmpty) {
-        setState(() => _heroUrls = r.urls);
+      final cleaned = _sanitizeHeroUrls(r.urls);
+      if (cleaned.isNotEmpty) {
+        setState(() => _heroUrls = cleaned);
       }
     });
   }
@@ -54,6 +55,39 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     if (p.galleryUrls.isNotEmpty) return List<String>.from(p.galleryUrls);
     if (p.imageUrl != null && p.imageUrl!.isNotEmpty) return [p.imageUrl!];
     return [];
+  }
+
+  /// Product detail carousel should avoid broken/thumbnail URLs so the user
+  /// doesn't see extra "placeholder" pages.
+  static List<String> _sanitizeHeroUrls(List<String> raw) {
+    final seen = <String>{};
+    final out = <String>[];
+
+    bool looksLikeThumb(String u) {
+      final s = u.toLowerCase();
+      return s.contains('thumb') || s.contains('-thumbs/') || s.contains('/thumbs/');
+    }
+
+    void add(String u) {
+      final t = u.trim();
+      if (t.isEmpty) return;
+      if (seen.add(t)) out.add(t);
+    }
+
+    // Prefer non-thumbnail URLs first.
+    for (final u in raw) {
+      if (!looksLikeThumb(u)) add(u);
+    }
+    // If nothing else exists, allow thumb URLs as a fallback.
+    if (out.isEmpty) {
+      for (final u in raw) {
+        add(u);
+      }
+    }
+
+    // Keep the carousel reasonable; avoids showing a long list of near-duplicates.
+    if (out.length > 8) return out.take(8).toList();
+    return out;
   }
 
   @override

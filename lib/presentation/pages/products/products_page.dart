@@ -52,7 +52,6 @@ class ProductsPage extends StatelessWidget {
                       final thumbFallback = controller.thumbnailFallbackFor(p);
                       return _ProductCard(
                         product: p,
-                        cartController: cartController,
                         accentColor: _getCardColor(i),
                         catalogImageUrl: thumb,
                         catalogImageFallbackUrl: thumbFallback,
@@ -84,7 +83,13 @@ class ProductsPage extends StatelessWidget {
       leading: Padding(
         padding: const EdgeInsets.all(8.0),
         child: InkWell(
-          onTap: () => Navigator.maybePop(context),
+          onTap: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go(AppRoutes.dashboard);
+            }
+          },
           child: Container(
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey.withOpacity(0.2)),
@@ -236,7 +241,6 @@ class ProductsPage extends StatelessWidget {
 
 class _ProductCard extends StatelessWidget {
   final ProductEntity product;
-  final CartController cartController;
   final Color accentColor;
   /// Prefer first URL from product-images API (via [ProductController.thumbnailUrlFor]).
   final String? catalogImageUrl;
@@ -244,7 +248,6 @@ class _ProductCard extends StatelessWidget {
 
   const _ProductCard({
     required this.product,
-    required this.cartController,
     required this.accentColor,
     this.catalogImageUrl,
     this.catalogImageFallbackUrl,
@@ -252,9 +255,6 @@ class _ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final inStock = product.isInStock;
-    // Logic to determine if we show the stepper (if already in cart) or Add Button
-    final cartItemCount = cartController.getItemCount(product.id);
     final unit = product.unitLabel.isNotEmpty ? product.unitLabel : 'piece';
     final distCount = product.availableDistributorCount > 0 ? product.availableDistributorCount : 1;
     final mrp = product.mrp ?? product.price;
@@ -269,7 +269,6 @@ class _ProductCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
-          border: cartItemCount > 0 ? Border.all(color: ProductsPage.primaryTeal.withOpacity(0.5), width: 1.5) : null,
           boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
         ),
         child: Column(
@@ -337,35 +336,6 @@ class _ProductCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (inStock && cartItemCount > 0)
-                  _buildStepper(cartItemCount)
-                else if (inStock)
-                  ElevatedButton(
-                    onPressed: () => cartController.addItem(product),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: ProductsPage.primaryTeal,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    ),
-                    child: const Text('Add', style: TextStyle(fontWeight: FontWeight.w700)),
-                  )
-                else
-                  TextButton(
-                    onPressed: () {},
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('Notify', style: TextStyle(color: ProductsPage.primaryTeal, fontWeight: FontWeight.w600)),
-                        SizedBox(width: 2),
-                        Icon(Icons.notifications_none, size: 16, color: ProductsPage.primaryTeal),
-                      ],
-                    ),
-                  ),
               ],
             ),
             if ((product.description ?? '').trim().isNotEmpty) ...[
@@ -403,19 +373,6 @@ class _ProductCard extends StatelessWidget {
     } catch (_) {
       return '₹${price.toStringAsFixed(2)}';
     }
-  }
-
-  Widget _buildStepper(int count) {
-    return Container(
-      decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
-      child: Row(
-        children: [
-          IconButton(onPressed: () => cartController.removeItem(product.id), icon: const Icon(Icons.remove, size: 16)),
-          Text('$count', style: const TextStyle(fontWeight: FontWeight.bold)),
-          IconButton(onPressed: () => cartController.addItem(product), icon: const Icon(Icons.add, size: 16, color: ProductsPage.primaryTeal)),
-        ],
-      ),
-    );
   }
 
   Widget _kv(String k, String v) {
