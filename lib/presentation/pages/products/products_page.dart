@@ -7,6 +7,7 @@ import '../../../domain/entities/product_entity.dart';
 import '../../controllers/cart_controller.dart';
 import '../../widgets/product_network_image.dart';
 import '../../controllers/product_controller.dart';
+import '../../widgets/app_scaffold.dart';
 
 class ProductsPage extends StatelessWidget {
   const ProductsPage({super.key});
@@ -19,50 +20,53 @@ class ProductsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<ProductController>();
-    final cartController = Get.find<CartController>();
+    Get.find<CartController>();
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF6FBF9),
-      appBar: _buildAppBar(context, cartController),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeaderSection(controller),
-          _buildSearchBar(controller),
-          _buildCategoryFilter(controller),
-          Expanded(
-            child: Obx(() {
-              if (controller.isLoading.value && controller.products.isEmpty) {
-                return const Center(child: CircularProgressIndicator(color: primaryTeal));
-              }
-              return RefreshIndicator(
-                onRefresh: controller.refresh,
-                child: ListView.builder(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  itemCount: controller.filteredProducts.length,
-                  itemBuilder: (context, i) {
-                    final list = controller.filteredProducts;
-                    if (i < 0 || i >= list.length) {
-                      return const SizedBox.shrink();
-                    }
-                    final p = list[i];
-                    return Obx(() {
-                      final thumb = controller.thumbnailUrlFor(p);
-                      final thumbFallback = controller.thumbnailFallbackFor(p);
-                      return _ProductCard(
-                        product: p,
-                        accentColor: _getCardColor(i),
-                        catalogImageUrl: thumb,
-                        catalogImageFallbackUrl: thumbFallback,
-                      );
-                    });
-                  },
-                ),
-              );
-            }),
-          ),
-        ],
+    return AppScaffold(
+      title: 'Catalog',
+      currentRoute: AppRoutes.products,
+      body: Container(
+        color: const Color(0xFFF6FBF9),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeaderSection(controller),
+            _buildSearchBar(controller),
+            _buildCategoryFilter(controller),
+            Expanded(
+              child: Obx(() {
+                if (controller.isLoading.value && controller.products.isEmpty) {
+                  return const Center(child: CircularProgressIndicator(color: primaryTeal));
+                }
+                return RefreshIndicator(
+                  onRefresh: controller.refresh,
+                  child: ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: controller.filteredProducts.length,
+                    itemBuilder: (context, i) {
+                      final list = controller.filteredProducts;
+                      if (i < 0 || i >= list.length) {
+                        return const SizedBox.shrink();
+                      }
+                      final p = list[i];
+                      return Obx(() {
+                        final thumb = controller.thumbnailUrlFor(p);
+                        final thumbFallback = controller.thumbnailFallbackFor(p);
+                        return _ProductCard(
+                          product: p,
+                          accentColor: _getCardColor(i),
+                          catalogImageUrl: thumb,
+                          catalogImageFallbackUrl: thumbFallback,
+                        );
+                      });
+                    },
+                  ),
+                );
+              }),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
@@ -72,68 +76,6 @@ class ProductsPage extends StatelessWidget {
           side: const BorderSide(color: Color(0xFF0F5A53), width: 3),
         ),
         child: const Icon(Icons.headset_mic_outlined, color: Colors.white),
-      ),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(BuildContext context, CartController cartController) {
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      leading: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: InkWell(
-          onTap: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go(AppRoutes.dashboard);
-            }
-          },
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.withOpacity(0.2)),
-              borderRadius: BorderRadius.circular(12),
-              color: Colors.white,
-            ),
-            child: const Icon(Icons.chevron_left, color: primaryTeal),
-          ),
-        ),
-      ),
-      centerTitle: true,
-      title: const Text('Catalog',
-          style: TextStyle(color: darkGrey, fontWeight: FontWeight.bold, fontSize: 18)),
-      actions: [
-        Obx(() => _buildCartAction(cartController.itemCount)),
-      ],
-    );
-  }
-
-  Widget _buildCartAction(int count) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 16.0),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
-            ),
-            child: const Icon(Icons.shopping_cart_outlined, color: primaryTeal),
-          ),
-          if (count > 0)
-            Positioned(
-              top: 5, right: 0,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(color: Color(0xFFF27B7B), shape: BoxShape.circle),
-                child: Text('$count', style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
-              ),
-            )
-        ],
       ),
     );
   }

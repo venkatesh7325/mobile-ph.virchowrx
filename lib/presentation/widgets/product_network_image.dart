@@ -58,25 +58,13 @@ class _ProductNetworkImageState extends State<ProductNetworkImage> {
     return null;
   }
 
-  bool _is404(Object error) {
-    if (error is NetworkImageLoadException) {
-      return error.statusCode == 404;
-    }
-    return error.toString().contains('statusCode: 404');
-  }
-
   @override
   Widget build(BuildContext context) {
     final url = _activeUrl;
     if (url == null || url.isEmpty) {
-      return _clip(widget.fallback);
+      // If no URL is available at all, render nothing (no placeholder).
+      return SizedBox(width: widget.width, height: widget.height);
     }
-
-    final fb = widget.fallbackImageUrl?.trim();
-    final canRetry404 = fb != null &&
-        fb.isNotEmpty &&
-        fb != url &&
-        url == widget.imageUrl?.trim();
 
     Widget image = Image.network(
       url,
@@ -115,12 +103,9 @@ class _ProductNetworkImageState extends State<ProductNetworkImage> {
               '[ProductNetworkImage] failed to load: ${url.length > 120 ? '${url.substring(0, 120)}…' : url}');
           debugPrint('[ProductNetworkImage] error: $error');
         }
-        if (canRetry404 && _is404(error)) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) setState(() => _activeUrl = fb);
-          });
-        }
-        return widget.fallback;
+        // If the request fails (commonly 404 on missing blobs), render nothing
+        // and do not attempt fallback URLs or placeholders.
+        return SizedBox(width: widget.width, height: widget.height);
       },
     );
 

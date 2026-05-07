@@ -2,9 +2,10 @@ import 'package:get/get.dart';
 import '../../domain/entities/product_entity.dart';
 
 class CartItem {
+  final String key;
   final ProductEntity product;
   final RxInt quantity;
-  CartItem({required this.product, int qty = 1}) : quantity = qty.obs;
+  CartItem({required this.key, required this.product, int qty = 1}) : quantity = qty.obs;
   double get total => product.price * quantity.value;
 }
 
@@ -23,58 +24,63 @@ class CartController extends GetxController {
 
   bool get isEmpty => items.isEmpty;
 
-  int getItemCount(String productId) {
-    final item = items.firstWhereOrNull((i) => i.product.id == productId);
+  String itemKeyFor(ProductEntity product) =>
+      (product.catalogId != null && product.catalogId! > 0)
+          ? product.catalogId!.toString()
+          : product.id;
+
+  int getItemCount(String key) {
+    final item = items.firstWhereOrNull((i) => i.key == key);
     return item?.quantity.value ?? 0;
   }
   void addItem(ProductEntity product, {int quantity = 1}) {
-    final existing = items.firstWhereOrNull((i) => i.product.id == product.id);
+    final key = itemKeyFor(product);
+    final existing = items.firstWhereOrNull((i) => i.key == key);
     if (existing != null) {
       existing.quantity.value += quantity;
     } else {
-      items.add(CartItem(product: product, qty: quantity));
+      items.add(CartItem(key: key, product: product, qty: quantity));
     }
     items.refresh();
   }
 
-  void removeItem(String productId) {
-    items.removeWhere((i) => i.product.id == productId);
+  void removeItem(String key) {
+    items.removeWhere((i) => i.key == key);
   }
 
-  void updateQuantity(String productId, int quantity) {
+  void updateQuantity(String key, int quantity) {
     if (quantity <= 0) {
-      removeItem(productId);
+      removeItem(key);
       return;
     }
-    final item = items.firstWhereOrNull((i) => i.product.id == productId);
+    final item = items.firstWhereOrNull((i) => i.key == key);
     if (item != null) {
       item.quantity.value = quantity;
       items.refresh();
     }
   }
 
-  void incrementQuantity(String productId) {
-    final item = items.firstWhereOrNull((i) => i.product.id == productId);
+  void incrementQuantity(String key) {
+    final item = items.firstWhereOrNull((i) => i.key == key);
     if (item != null) {
       item.quantity.value++;
       items.refresh();
     }
   }
 
-  void decrementQuantity(String productId) {
-    final item = items.firstWhereOrNull((i) => i.product.id == productId);
+  void decrementQuantity(String key) {
+    final item = items.firstWhereOrNull((i) => i.key == key);
     if (item != null) {
       if (item.quantity.value > 1) {
         item.quantity.value--;
         items.refresh();
       } else {
-        removeItem(productId);
+        removeItem(key);
       }
     }
   }
 
   void clearCart() => items.clear();
 
-  bool isInCart(String productId) =>
-      items.any((i) => i.product.id == productId);
+  bool isInCart(String key) => items.any((i) => i.key == key);
 }

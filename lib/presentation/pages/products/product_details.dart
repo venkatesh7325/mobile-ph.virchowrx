@@ -3,9 +3,11 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../../core/constants/app_routes.dart';
+import '../../../core/network/api_client.dart';
 import '../../../domain/entities/product_entity.dart';
 import '../../../domain/repositories/product_repository.dart';
+import '../../controllers/cart_controller.dart';
+import '../../widgets/app_states.dart';
 import '../../widgets/product_network_image.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -26,11 +28,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   /// [ProductRepository.getProductImageUrls] when the product-images API returns URLs.
   List<String> _heroUrls = [];
 
+  List<_DistributorOffer> _offers = const [];
+  bool _offersLoading = false;
+  String? _offersError;
+  final Map<String, TextEditingController> _qtyControllers = {};
+
   @override
   void initState() {
     super.initState();
     _heroUrls = _sanitizeHeroUrls(_heroImageUrlsFromEntity(_productEntity()));
     _loadProductImagesFromApi();
+    _loadDistributorOffers();
+  }
+
+  @override
+  void dispose() {
+    for (final c in _qtyControllers.values) {
+      c.dispose();
+    }
+    super.dispose();
   }
 
   Future<void> _loadProductImagesFromApi() async {
@@ -48,6 +64,51 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   ProductEntity? _productEntity() =>
       widget.product is ProductEntity ? widget.product as ProductEntity : null;
+
+  Future<void> _loadDistributorOffers() async {
+    final p = _productEntity();
+    if (p == null || p.id.isEmpty) return;
+    setState(() {
+      _offersLoading = true;
+      _offersError = null;
+    });
+    try {
+      final pid = int.tryParse(p.id);
+      if (pid == null) {
+        setState(() {
+          _offers = const [];
+          _offersError = 'Invalid product id';
+        });
+        return;
+      }
+      final api = Get.find<ApiClient>();
+      final res = await api.get('/products/cataloged/by-product/$pid') as Map<String, dynamic>;
+      final raw = res['products'];
+      if (raw is! List || raw.isEmpty) {
+        setState(() {
+          _offers = const [];
+          _offersError = 'No distributors found';
+        });
+        return;
+      }
+      final row = raw.first;
+      if (row is! Map) {
+        setState(() {
+          _offers = const [];
+          _offersError = 'Unexpected distributor response';
+        });
+        return;
+      }
+      final offers = _DistributorOffer.parseList(Map<String, dynamic>.from(row));
+      setState(() => _offers = offers);
+    } catch (e) {
+      setState(() => _offersError = 'Could not load distributors');
+    } finally {
+      if (mounted) {
+        setState(() => _offersLoading = false);
+      }
+    }
+  }
 
   /// Fallback URLs from catalog payload before product-images API responds.
   List<String> _heroImageUrlsFromEntity(ProductEntity? p) {
@@ -111,12 +172,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   const SizedBox(height: 20),
                   _buildCompositionCard(),
                   const SizedBox(height: 16),
+                  _buildDistributorsSection(),
+                  const SizedBox(height: 16),
                   _buildDetailGrid(),
-                  const SizedBox(height: 120), // Space for bottom bar
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
-            _buildBottomActionBar(context),
           ],
         ),
       ),
@@ -352,74 +414,318 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildBottomActionBar(BuildContext context) {
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))],
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              flex: 2,
-              child: OutlinedButton(
-                onPressed: () {},
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: BorderSide(color: Colors.grey.shade200),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.business_center_outlined, color: ProductDetailScreen.primaryTeal, size: 20),
-                    SizedBox(width: 8),
-                    Text('Distributors', style: TextStyle(color: ProductDetailScreen.primaryTeal, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-              ),
+  void _showDistributorsSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.80,
+        minChildSize: 0.50,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) {
+          return Container(
+            decoration: const BoxDecoration(
+              color: ProductDetailScreen.bgLight,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              flex: 3,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: [ProductDetailScreen.primaryTeal, Color(0xFF0F5A53)]),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: ElevatedButton(
-                  onPressed: () {
-                    context.push(AppRoutes.productInfo, extra: widget.product);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        _productEntity() != null
-                            ? 'Add to cart · ${NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0).format(_productEntity()!.price)}'
-                            : 'Add to cart · ₹110',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.arrow_forward, color: Colors.white, size: 18),
-                    ],
-                  ),
-                ),
-              ),
+            child: SingleChildScrollView(
+              controller: scrollController,
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              child: _buildDistributorsSection(inSheet: true),
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
+  }
+
+  Widget _buildDistributorsSection({bool inSheet = false}) {
+    final p = _productEntity();
+    final currency = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 2);
+
+    Widget header = Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          inSheet ? 'Available Distributors' : 'AVAILABLE DISTRIBUTORS',
+          style: TextStyle(
+            color: inSheet ? ProductDetailScreen.darkText : Colors.grey,
+            fontWeight: FontWeight.w800,
+            fontSize: inSheet ? 16 : 11,
+            letterSpacing: inSheet ? 0 : 1.2,
+          ),
+        ),
+        if (!inSheet)
+          TextButton(
+            onPressed: _showDistributorsSheet,
+            child: const Text('View all', style: TextStyle(color: ProductDetailScreen.primaryTeal)),
+          ),
+      ],
+    );
+
+    if (_offersLoading) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          header,
+          const SizedBox(height: 10),
+          const Center(child: Padding(padding: EdgeInsets.all(14), child: CircularProgressIndicator())),
+        ],
+      );
+    }
+
+    if (_offersError != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          header,
+          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Text(_offersError!, style: const TextStyle(color: Colors.grey)),
+          ),
+        ],
+      );
+    }
+
+    final list = _offers;
+    if (list.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          header,
+          const SizedBox(height: 10),
+          const Text('No distributors available', style: TextStyle(color: Colors.grey)),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        header,
+        const SizedBox(height: 10),
+        ListView.separated(
+          physics: const NeverScrollableScrollPhysics(),
+          shrinkWrap: true,
+          itemCount: list.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          itemBuilder: (context, i) {
+            final o = list[i];
+            final qtyCtrl = _qtyControllers.putIfAbsent(o.key, () => TextEditingController(text: '1'));
+            return Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: Colors.grey.shade100),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 12, offset: const Offset(0, 6))],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 18,
+                        backgroundColor: const Color(0xFFE0F2F1),
+                        child: Text(
+                          o.distributorName.isNotEmpty ? o.distributorName[0].toUpperCase() : 'D',
+                          style: const TextStyle(color: ProductDetailScreen.primaryTeal, fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          o.distributorName,
+                          style: const TextStyle(fontWeight: FontWeight.w800, color: ProductDetailScreen.darkText),
+                        ),
+                      ),
+                      Text(
+                        currency.format(o.pharmacyPrice),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: ProductDetailScreen.primaryTeal,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 8,
+                    children: [
+                      _miniInfo(Icons.call, o.phone.isNotEmpty ? o.phone : '—'),
+                      _miniInfo(Icons.location_on_outlined, o.addressLine.isNotEmpty ? o.addressLine : '—'),
+                      _miniInfo(Icons.local_shipping_outlined, 'Min/Max: ${o.minOrder ?? '—'} - ${o.maxOrder ?? '—'}'),
+                      if (o.discount != null && o.discount!.trim().isNotEmpty)
+                        _miniInfo(Icons.percent, o.discount!),
+                      if (o.specialNotes != null && o.specialNotes!.trim().isNotEmpty)
+                        _miniInfo(Icons.sticky_note_2_outlined, o.specialNotes!),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: 88,
+                        child: TextField(
+                          controller: qtyCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            isDense: true,
+                            hintText: 'Qty',
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: (p == null) ? null : () => _addOfferToCart(p, o, qtyCtrl.text),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: ProductDetailScreen.primaryTeal,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text('ADD TO CART', style: TextStyle(fontWeight: FontWeight.w800)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  static Widget _miniInfo(IconData icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: Colors.grey.shade600),
+        const SizedBox(width: 6),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 230),
+          child: Text(
+            text,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _addOfferToCart(ProductEntity base, _DistributorOffer offer, String rawQty) {
+    final qty = int.tryParse(rawQty.trim()) ?? 1;
+    if (qty <= 0) {
+      AppSnackBar.showError(context, 'Quantity must be at least 1');
+      return;
+    }
+
+    final item = ProductEntity(
+      id: base.id,
+      name: base.name,
+      code: base.code,
+      category: base.category,
+      price: offer.pharmacyPrice,
+      mrp: base.mrp,
+      unitLabel: base.unitLabel,
+      availableDistributorCount: base.availableDistributorCount,
+      stock: base.stock,
+      imageUrl: base.imageUrl,
+      galleryUrls: base.galleryUrls,
+      description: base.description,
+      isActive: base.isActive,
+      catalogId: offer.catalogId,
+      distributorId: offer.distributorId,
+    );
+
+    Get.find<CartController>().addItem(item, quantity: qty);
+    AppSnackBar.showSuccess(context, 'Added to cart');
+  }
+}
+
+class _DistributorOffer {
+  final int? catalogId;
+  final int? distributorId;
+  final String distributorName;
+  final String phone;
+  final String addressLine;
+  final double pharmacyPrice;
+  final int? minOrder;
+  final int? maxOrder;
+  final String? discount;
+  final String? specialNotes;
+
+  const _DistributorOffer({
+    required this.catalogId,
+    required this.distributorId,
+    required this.distributorName,
+    required this.phone,
+    required this.addressLine,
+    required this.pharmacyPrice,
+    required this.minOrder,
+    required this.maxOrder,
+    required this.discount,
+    required this.specialNotes,
+  });
+
+  String get key => '${catalogId ?? ''}_${distributorId ?? distributorName}';
+
+  static List<_DistributorOffer> parseList(Map<String, dynamic> row) {
+    final distributors = row['distributors'];
+    if (distributors is! List) return const [];
+    final out = <_DistributorOffer>[];
+
+    for (final d in distributors) {
+      if (d is! Map) continue;
+      final m = Map<String, dynamic>.from(d);
+      final dist = m['distributor'] is Map ? Map<String, dynamic>.from(m['distributor'] as Map) : const <String, dynamic>{};
+      final name = dist['name']?.toString() ?? 'Distributor';
+      final phone = dist['phone']?.toString() ?? '';
+      final addressParts = <String>[
+        dist['address']?.toString() ?? '',
+        dist['city']?.toString() ?? '',
+        dist['state']?.toString() ?? '',
+      ].where((s) => s.trim().isNotEmpty).toList();
+      final address = addressParts.join(', ');
+
+      final price = (m['pharmacy_price'] as num?)?.toDouble() ??
+          (m['price'] as num?)?.toDouble() ??
+          0.0;
+
+      out.add(
+        _DistributorOffer(
+          catalogId: (m['catalog_id'] as num?)?.toInt(),
+          distributorId: (dist['id'] as num?)?.toInt(),
+          distributorName: name,
+          phone: phone,
+          addressLine: address,
+          pharmacyPrice: price,
+          minOrder: (m['min_order'] as num?)?.toInt() ?? (m['min_qty'] as num?)?.toInt(),
+          maxOrder: (m['max_order'] as num?)?.toInt() ?? (m['max_qty'] as num?)?.toInt(),
+          discount: m['discount']?.toString(),
+          specialNotes: m['special_notes']?.toString() ?? m['notes']?.toString(),
+        ),
+      );
+    }
+
+    out.sort((a, b) => a.pharmacyPrice.compareTo(b.pharmacyPrice));
+    return out;
   }
 }
 
@@ -462,6 +768,9 @@ class _ProductDetailImageCarouselState extends State<_ProductDetailImageCarousel
 
   @override
   Widget build(BuildContext context) {
+    // If there are no real images, don't render any default/placeholder image.
+    if (widget.urls.isEmpty) return const SizedBox.shrink();
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -472,9 +781,6 @@ class _ProductDetailImageCarouselState extends State<_ProductDetailImageCarousel
             itemCount: _pageCount,
             onPageChanged: (i) => setState(() => _index = i),
             itemBuilder: (context, i) {
-              if (widget.urls.isEmpty) {
-                return Center(child: widget.mockFallback);
-              }
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: ProductNetworkImage(

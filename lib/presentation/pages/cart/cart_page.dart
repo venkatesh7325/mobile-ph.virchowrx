@@ -142,6 +142,7 @@ class _CartLineCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = item.product;
+    final key = item.key;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -166,7 +167,7 @@ class _CartLineCard extends StatelessWidget {
                 ),
               ),
               IconButton(
-                onPressed: () => cart.removeItem(p.id),
+                onPressed: () => cart.removeItem(key),
                 icon: const Icon(Icons.delete_outline, color: Color(0xFFBBBBBB)),
               ),
             ],
@@ -197,7 +198,7 @@ class _QtyControl extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final p = item.product;
+    final key = item.key;
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFF0F0F0),
@@ -207,7 +208,7 @@ class _QtyControl extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           GestureDetector(
-            onTap: () => cart.decrementQuantity(p.id),
+            onTap: () => cart.decrementQuantity(key),
             child: const SizedBox(
               width: 34,
               height: 34,
@@ -223,7 +224,7 @@ class _QtyControl extends StatelessWidget {
                 ),
               )),
           GestureDetector(
-            onTap: () => cart.incrementQuantity(p.id),
+            onTap: () => cart.incrementQuantity(key),
             child: SizedBox(
               width: 34,
               height: 34,
