@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import 'distributer_details_screen.dart';
+import '../../controllers/distributor_controller.dart';
+import '../../../domain/entities/distributor_entity.dart';
 class DistributorsListScreen extends StatefulWidget {
   const DistributorsListScreen({super.key});
 
@@ -17,60 +20,13 @@ class _DistributorsListScreenState extends State<DistributorsListScreen> {
   String _selectedState = 'All';
   String _selectedCity = 'All';
   String _selectedPincode = 'All';
+  late final DistributorController _controller;
 
-  final List<Map<String, dynamic>> distributors = [
-    {
-      'initials': 'CM',
-      'name': 'CityMed Wholesale',
-      'location': 'Baner, Pune',
-      'state': 'Maharashtra',
-      'city': 'Pune',
-      'pincode': '411045',
-      'distance': '4.2 km',
-      'rating': 4.9,
-      'products': 324,
-      'active': true,
-      'code': 'DIST002',
-      'gst': '27BBBBB2345B1Z6',
-      'avatarColor': Color(0xFF1D9E75),
-      'avatarColor2': Color(0xFF0F6E56),
-      'verified': true,
-    },
-    {
-      'initials': 'MP',
-      'name': 'MedPlus Distribution',
-      'location': 'Hinjewadi, Pune',
-      'state': 'Maharashtra',
-      'city': 'Pune',
-      'pincode': '411057',
-      'distance': '6.8 km',
-      'rating': 4.7,
-      'products': 512,
-      'active': true,
-      'code': 'DIST005',
-      'gst': '27CCCCC4567C1Z2',
-      'avatarColor': Color(0xFF7F77DD),
-      'avatarColor2': Color(0xFF534AB7),
-      'verified': true,
-    },
-    {
-      'initials': 'SP',
-      'name': 'Sahayadri Pharma',
-      'location': 'Kothrud, Pune',
-      'state': 'Maharashtra',
-      'city': 'Pune',
-      'pincode': '411038',
-      'distance': '9.1 km',
-      'rating': 4.5,
-      'products': 186,
-      'active': false,
-      'code': '',
-      'gst': '',
-      'avatarColor': Color(0xFFF5A623),
-      'avatarColor2': Color(0xFFE67E22),
-      'verified': false,
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _controller = Get.find<DistributorController>();
+  }
 
   @override
   void dispose() {
@@ -78,29 +34,33 @@ class _DistributorsListScreenState extends State<DistributorsListScreen> {
     super.dispose();
   }
 
-  List<Map<String, dynamic>> get _filteredDistributors {
+  List<DistributorEntity> get _filteredDistributors {
     final q = _searchCtrl.text.trim().toLowerCase();
-    return distributors.where((d) {
-      final state = (d['state']?.toString() ?? '').trim();
-      final city = (d['city']?.toString() ?? '').trim();
-      final pin = (d['pincode']?.toString() ?? '').trim();
+    final base = _controller.distributors;
+    return base.where((d) {
+      final state = d.state.trim();
+      final city = d.city.trim();
+      final pin = d.pincode.trim();
 
       if (_selectedState != 'All' && state.toLowerCase() != _selectedState.toLowerCase()) return false;
       if (_selectedCity != 'All' && city.toLowerCase() != _selectedCity.toLowerCase()) return false;
       if (_selectedPincode != 'All' && pin != _selectedPincode) return false;
 
       if (q.isEmpty) return true;
-      final name = (d['name']?.toString() ?? '').toLowerCase();
-      final code = (d['code']?.toString() ?? '').toLowerCase();
-      final loc = (d['location']?.toString() ?? '').toLowerCase();
-      return name.contains(q) || code.contains(q) || loc.contains(q) || city.toLowerCase().contains(q) || state.toLowerCase().contains(q) || pin.contains(q);
+      final name = d.name.toLowerCase();
+      final addr = d.address.toLowerCase();
+      return name.contains(q) ||
+          addr.contains(q) ||
+          city.toLowerCase().contains(q) ||
+          state.toLowerCase().contains(q) ||
+          pin.contains(q);
     }).toList();
   }
 
   List<String> get _states {
     final s = <String>{};
-    for (final d in distributors) {
-      final v = (d['state']?.toString() ?? '').trim();
+    for (final d in _controller.distributors) {
+      final v = d.state.trim();
       if (v.isNotEmpty) s.add(v);
     }
     final out = s.toList()..sort();
@@ -109,8 +69,8 @@ class _DistributorsListScreenState extends State<DistributorsListScreen> {
 
   List<String> get _cities {
     final s = <String>{};
-    for (final d in distributors) {
-      final v = (d['city']?.toString() ?? '').trim();
+    for (final d in _controller.distributors) {
+      final v = d.city.trim();
       if (v.isNotEmpty) s.add(v);
     }
     final out = s.toList()..sort();
@@ -119,8 +79,8 @@ class _DistributorsListScreenState extends State<DistributorsListScreen> {
 
   List<String> get _pincodes {
     final s = <String>{};
-    for (final d in distributors) {
-      final v = (d['pincode']?.toString() ?? '').trim();
+    for (final d in _controller.distributors) {
+      final v = d.pincode.trim();
       if (v.isNotEmpty) s.add(v);
     }
     final out = s.toList()..sort();
@@ -129,46 +89,71 @@ class _DistributorsListScreenState extends State<DistributorsListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _filteredDistributors;
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
         child: Stack(
           children: [
-            CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 18),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 10),
-                        _buildTopNav(context),
-                        const SizedBox(height: 16),
-                        _buildSearchBar(),
-                        const SizedBox(height: 12),
-                        _buildFilterRow(),
-                        const SizedBox(height: 14),
-                      ],
-                    ),
-                  ),
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                          (context, index) => _buildDistributorCard(
-                        filtered[index],
-                        context,
+            Obx(() {
+              final filtered = _filteredDistributors;
+              return CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 18),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 10),
+                          _buildTopNav(context),
+                          const SizedBox(height: 16),
+                          _buildSearchBar(),
+                          const SizedBox(height: 12),
+                          _buildFilterRow(),
+                          const SizedBox(height: 14),
+                          if (_controller.errorMessage.value != null)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Text(
+                                _controller.errorMessage.value!,
+                                style: const TextStyle(color: Color(0xFFB91C1C), fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                        ],
                       ),
-                      childCount: filtered.length,
                     ),
                   ),
-                ),
-                const SliverToBoxAdapter(child: SizedBox(height: 100)),
-              ],
-            ),
+                  if (_controller.isLoading.value)
+                    const SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 32),
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                    )
+                  else if (filtered.isEmpty)
+                    const SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 32, horizontal: 18),
+                        child: Text('No distributors found.', style: TextStyle(color: Color(0xFF6B7280))),
+                      ),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 18),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                              (context, index) => _buildDistributorCard(
+                            filtered[index],
+                            context,
+                          ),
+                          childCount: filtered.length,
+                        ),
+                      ),
+                    ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                ],
+              );
+            }),
             Positioned(
               bottom: 28,
               right: 20,
@@ -388,8 +373,13 @@ class _DistributorsListScreenState extends State<DistributorsListScreen> {
     );
   }
 
-  Widget _buildDistributorCard(Map<String, dynamic> dist, BuildContext context) {
-    final bool active = dist['active'] as bool;
+  Widget _buildDistributorCard(DistributorEntity dist, BuildContext context) {
+    final bool active = dist.isOpen;
+    final initials = _initials(dist.name);
+    final color1 = _avatarColor(dist.id, 0);
+    final color2 = _avatarColor(dist.id, 1);
+    final location = [dist.address, dist.city].where((s) => s.trim().isNotEmpty).join(', ');
+    final distance = dist.distanceKm != null ? '${dist.distanceKm!.toStringAsFixed(1)} km' : '';
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -404,7 +394,7 @@ class _DistributorsListScreenState extends State<DistributorsListScreen> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildAvatar(dist['initials'], dist['avatarColor'], dist['avatarColor2']),
+                _buildAvatar(initials, color1, color2),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -414,14 +404,10 @@ class _DistributorsListScreenState extends State<DistributorsListScreen> {
                         children: [
                           Flexible(
                             child: Text(
-                              dist['name'],
+                              dist.name,
                               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
                             ),
                           ),
-                          if (dist['verified'] == true) ...[
-                            const SizedBox(width: 5),
-                            _verifiedBadge(),
-                          ],
                         ],
                       ),
                       const SizedBox(height: 3),
@@ -430,7 +416,7 @@ class _DistributorsListScreenState extends State<DistributorsListScreen> {
                           const Icon(Icons.location_on_outlined, size: 11, color: Color(0xFF888888)),
                           const SizedBox(width: 2),
                           Text(
-                            '${dist['location']} · ${dist['distance']}',
+                            [location, if (distance.isNotEmpty) distance].where((s) => s.isNotEmpty).join(' · '),
                             style: const TextStyle(fontSize: 11, color: Color(0xFF888888)),
                           ),
                         ],
@@ -441,17 +427,14 @@ class _DistributorsListScreenState extends State<DistributorsListScreen> {
                           const Icon(Icons.star, size: 12, color: Color(0xFFF5A623)),
                           const SizedBox(width: 3),
                           Text(
-                            '${dist['rating']}',
+                            dist.rating.toStringAsFixed(dist.rating % 1 == 0 ? 0 : 1),
                             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
                           ),
                           const SizedBox(width: 6),
                           const Text('|', style: TextStyle(color: Color(0xFFCCCCCC), fontSize: 11)),
                           const SizedBox(width: 6),
-                          Text(
-                            '${dist['products']} products',
-                            style: const TextStyle(fontSize: 12, color: Color(0xFF666666)),
-                          ),
-                          const SizedBox(width: 8),
+                          Text(dist.pincode, style: const TextStyle(fontSize: 12, color: Color(0xFF666666))),
+                          const SizedBox(width: 10),
                           if (active) _activeBadge() else _closedBadge(),
                         ],
                       ),
@@ -460,42 +443,44 @@ class _DistributorsListScreenState extends State<DistributorsListScreen> {
                 ),
               ],
             ),
-            if (active) ...[
-              const SizedBox(height: 10),
-              Container(height: 1, color: const Color(0xFFF0F0F0)),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '${dist['code']} · GST ${dist['gst']}',
+            const SizedBox(height: 10),
+            Container(height: 1, color: const Color(0xFFF0F0F0)),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    dist.phone.isEmpty ? '—' : dist.phone,
                     style: const TextStyle(fontSize: 10, color: Color(0xFFAAAAAA), letterSpacing: 0.2),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const DistributorDetailScreen()),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0F6E56),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Row(
-                        children: [
-                          Text('View', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
-                          SizedBox(width: 4),
-                          Text('→', style: TextStyle(color: Colors.white, fontSize: 12)),
-                        ],
-                      ),
+                ),
+                const SizedBox(width: 10),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const DistributorDetailScreen()),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F6E56),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Row(
+                      children: [
+                        Text('View', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                        SizedBox(width: 4),
+                        Text('→', style: TextStyle(color: Colors.white, fontSize: 12)),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -520,15 +505,6 @@ class _DistributorsListScreenState extends State<DistributorsListScreen> {
           style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
         ),
       ),
-    );
-  }
-
-  Widget _verifiedBadge() {
-    return Container(
-      width: 14,
-      height: 14,
-      decoration: const BoxDecoration(color: Color(0xFF1D9E75), shape: BoxShape.circle),
-      child: const Icon(Icons.check, size: 9, color: Colors.white),
     );
   }
 
@@ -565,5 +541,32 @@ class _DistributorsListScreenState extends State<DistributorsListScreen> {
       ),
       child: const Icon(Icons.location_on, color: Colors.white, size: 22),
     );
+  }
+
+  String _initials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    if (parts.isEmpty) return 'D';
+    final a = parts.first.characters.first;
+    final b = parts.length > 1 ? parts[1].characters.first : (parts.first.length > 1 ? parts.first.characters.elementAt(1) : '');
+    final out = (a + b).toUpperCase();
+    return out.length >= 2 ? out.substring(0, 2) : out;
+  }
+
+  Color _avatarColor(String seed, int variant) {
+    final s = seed.isEmpty ? '0' : seed;
+    var hash = 0;
+    for (final c in s.codeUnits) {
+      hash = 0x1fffffff & (hash + c);
+      hash = 0x1fffffff & (hash + ((0x0007ffff & hash) << 10));
+      hash ^= (hash >> 6);
+    }
+    hash = 0x1fffffff & (hash + ((0x03ffffff & hash) << 3));
+    hash ^= (hash >> 11);
+    hash = 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
+    final base = (hash + (variant * 97)) % 360;
+    final h = base.toDouble();
+    final s1 = variant == 0 ? 0.55 : 0.65;
+    final l1 = variant == 0 ? 0.55 : 0.40;
+    return HSLColor.fromAHSL(1.0, h, s1, l1).toColor();
   }
 }

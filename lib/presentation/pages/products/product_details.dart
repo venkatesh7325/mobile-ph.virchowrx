@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 
+import '../../../core/constants/app_routes.dart';
 import '../../../core/network/api_client.dart';
 import '../../../domain/entities/product_entity.dart';
 import '../../../domain/repositories/product_repository.dart';
@@ -200,6 +201,35 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       title: const Text('Product',
           style: TextStyle(color: ProductDetailScreen.darkText, fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'serif')),
       actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 10),
+          child: Obx(() {
+            final cart = Get.find<CartController>();
+            final hasItems = !cart.isEmpty;
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                _buildSquareButton(
+                  Icons.shopping_cart_outlined,
+                  () => context.push(AppRoutes.cart),
+                ),
+                if (hasItems)
+                  Positioned(
+                    right: 6,
+                    top: 8,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFE53935),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          }),
+        ),
         Padding(
           padding: const EdgeInsets.only(right: 20),
           child: _buildSquareButton(Icons.more_horiz, () {}),
