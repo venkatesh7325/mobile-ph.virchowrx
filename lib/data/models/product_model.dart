@@ -18,6 +18,9 @@ class ProductModel extends ProductEntity {
     super.isActive,
     super.catalogId,
     super.distributorId,
+    super.distributorName,
+    super.minOrderQty,
+    super.maxOrderQty,
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
@@ -50,6 +53,13 @@ class ProductModel extends ProductEntity {
       isActive: json['is_active'] ?? true,
       catalogId: (json['catalog_id'] as num?)?.toInt(),
       distributorId: (json['distributor_id'] as num?)?.toInt(),
+      distributorName: json['distributor_name']?.toString(),
+      minOrderQty: (json['min_order_qty'] as num?)?.toInt() ??
+          (json['min_order'] as num?)?.toInt() ??
+          (json['min_qty'] as num?)?.toInt(),
+      maxOrderQty: (json['max_order_qty'] as num?)?.toInt() ??
+          (json['max_order'] as num?)?.toInt() ??
+          (json['max_qty'] as num?)?.toInt(),
     );
   }
 
@@ -62,6 +72,11 @@ class ProductModel extends ProductEntity {
     final catalogId = (chosen?['catalog_id'] as num?)?.toInt();
     final dist = chosen?['distributor'] as Map<String, dynamic>?;
     final distributorId = (dist?['id'] as num?)?.toInt();
+    final distributorName = dist?['name']?.toString();
+    final minOrderQty = (chosen?['min_order'] as num?)?.toInt() ??
+        (chosen?['min_qty'] as num?)?.toInt();
+    final maxOrderQty = (chosen?['max_order'] as num?)?.toInt() ??
+        (chosen?['max_qty'] as num?)?.toInt();
 
     final price = (chosen?['pharmacy_price'] as num?)?.toDouble() ??
         (product['unit_price'] as num?)?.toDouble() ??
@@ -97,6 +112,9 @@ class ProductModel extends ProductEntity {
       isActive: product['is_active'] ?? true,
       catalogId: catalogId,
       distributorId: distributorId,
+      distributorName: distributorName,
+      minOrderQty: minOrderQty,
+      maxOrderQty: maxOrderQty,
     );
   }
 
@@ -211,6 +229,9 @@ class ProductModel extends ProductEntity {
         'is_active': isActive,
         'catalog_id': catalogId,
         'distributor_id': distributorId,
+        'distributor_name': distributorName,
+        'min_order_qty': minOrderQty,
+        'max_order_qty': maxOrderQty,
       };
 
   factory ProductModel.fromEntity(ProductEntity entity) => ProductModel(
@@ -229,6 +250,9 @@ class ProductModel extends ProductEntity {
         isActive: entity.isActive,
         catalogId: entity.catalogId,
         distributorId: entity.distributorId,
+        distributorName: entity.distributorName,
+        minOrderQty: entity.minOrderQty,
+        maxOrderQty: entity.maxOrderQty,
       );
 
   static List<ProductModel> get sampleList => [

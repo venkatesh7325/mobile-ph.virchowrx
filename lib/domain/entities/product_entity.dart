@@ -22,6 +22,12 @@ class ProductEntity extends Equatable {
   /// Pharmacy catalog line (for checkout); from `/products/cataloged`.
   final int? catalogId;
   final int? distributorId;
+  /// From catalog distributor row when present (cart / checkout display).
+  final String? distributorName;
+  /// Minimum order quantity from distributor offer (cart qty validation).
+  final int? minOrderQty;
+  /// Maximum order quantity from distributor offer (cart qty validation).
+  final int? maxOrderQty;
 
   const ProductEntity({
     required this.id,
@@ -39,6 +45,9 @@ class ProductEntity extends Equatable {
     this.isActive = true,
     this.catalogId,
     this.distributorId,
+    this.distributorName,
+    this.minOrderQty,
+    this.maxOrderQty,
   });
 
   bool get isInStock => stock > 0;
@@ -61,5 +70,8 @@ class ProductEntity extends Equatable {
         isActive,
         catalogId,
         distributorId,
+        distributorName,
+        minOrderQty,
+        maxOrderQty,
       ];
 }

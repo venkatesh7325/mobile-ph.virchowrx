@@ -13,11 +13,19 @@ class _DistributorsListScreenState extends State<DistributorsListScreen> {
   final Color accentGreen = const Color(0xFF1D9E75);
   final Color bgColor = const Color(0xFFF4FAF7);
 
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _selectedState = 'All';
+  String _selectedCity = 'All';
+  String _selectedPincode = 'All';
+
   final List<Map<String, dynamic>> distributors = [
     {
       'initials': 'CM',
       'name': 'CityMed Wholesale',
       'location': 'Baner, Pune',
+      'state': 'Maharashtra',
+      'city': 'Pune',
+      'pincode': '411045',
       'distance': '4.2 km',
       'rating': 4.9,
       'products': 324,
@@ -32,6 +40,9 @@ class _DistributorsListScreenState extends State<DistributorsListScreen> {
       'initials': 'MP',
       'name': 'MedPlus Distribution',
       'location': 'Hinjewadi, Pune',
+      'state': 'Maharashtra',
+      'city': 'Pune',
+      'pincode': '411057',
       'distance': '6.8 km',
       'rating': 4.7,
       'products': 512,
@@ -46,6 +57,9 @@ class _DistributorsListScreenState extends State<DistributorsListScreen> {
       'initials': 'SP',
       'name': 'Sahayadri Pharma',
       'location': 'Kothrud, Pune',
+      'state': 'Maharashtra',
+      'city': 'Pune',
+      'pincode': '411038',
       'distance': '9.1 km',
       'rating': 4.5,
       'products': 186,
@@ -59,7 +73,63 @@ class _DistributorsListScreenState extends State<DistributorsListScreen> {
   ];
 
   @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  List<Map<String, dynamic>> get _filteredDistributors {
+    final q = _searchCtrl.text.trim().toLowerCase();
+    return distributors.where((d) {
+      final state = (d['state']?.toString() ?? '').trim();
+      final city = (d['city']?.toString() ?? '').trim();
+      final pin = (d['pincode']?.toString() ?? '').trim();
+
+      if (_selectedState != 'All' && state.toLowerCase() != _selectedState.toLowerCase()) return false;
+      if (_selectedCity != 'All' && city.toLowerCase() != _selectedCity.toLowerCase()) return false;
+      if (_selectedPincode != 'All' && pin != _selectedPincode) return false;
+
+      if (q.isEmpty) return true;
+      final name = (d['name']?.toString() ?? '').toLowerCase();
+      final code = (d['code']?.toString() ?? '').toLowerCase();
+      final loc = (d['location']?.toString() ?? '').toLowerCase();
+      return name.contains(q) || code.contains(q) || loc.contains(q) || city.toLowerCase().contains(q) || state.toLowerCase().contains(q) || pin.contains(q);
+    }).toList();
+  }
+
+  List<String> get _states {
+    final s = <String>{};
+    for (final d in distributors) {
+      final v = (d['state']?.toString() ?? '').trim();
+      if (v.isNotEmpty) s.add(v);
+    }
+    final out = s.toList()..sort();
+    return ['All', ...out];
+  }
+
+  List<String> get _cities {
+    final s = <String>{};
+    for (final d in distributors) {
+      final v = (d['city']?.toString() ?? '').trim();
+      if (v.isNotEmpty) s.add(v);
+    }
+    final out = s.toList()..sort();
+    return ['All', ...out];
+  }
+
+  List<String> get _pincodes {
+    final s = <String>{};
+    for (final d in distributors) {
+      final v = (d['pincode']?.toString() ?? '').trim();
+      if (v.isNotEmpty) s.add(v);
+    }
+    final out = s.toList()..sort();
+    return ['All', ...out];
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final filtered = _filteredDistributors;
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
@@ -76,10 +146,6 @@ class _DistributorsListScreenState extends State<DistributorsListScreen> {
                         const SizedBox(height: 10),
                         _buildTopNav(context),
                         const SizedBox(height: 16),
-                        _buildTrustedTag(),
-                        const SizedBox(height: 6),
-                        _buildHeading(),
-                        const SizedBox(height: 16),
                         _buildSearchBar(),
                         const SizedBox(height: 12),
                         _buildFilterRow(),
@@ -93,10 +159,10 @@ class _DistributorsListScreenState extends State<DistributorsListScreen> {
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                           (context, index) => _buildDistributorCard(
-                        distributors[index],
+                        filtered[index],
                         context,
                       ),
-                      childCount: distributors.length,
+                      childCount: filtered.length,
                     ),
                   ),
                 ),
@@ -123,8 +189,12 @@ class _DistributorsListScreenState extends State<DistributorsListScreen> {
           onTap: () => Navigator.pop(context),
         ),
         const Text(
-          'Distributors',
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
+          'Find Distributors',
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF1A1A1A),
+          ),
         ),
         _cartBtn(),
       ],
@@ -179,43 +249,6 @@ class _DistributorsListScreenState extends State<DistributorsListScreen> {
     );
   }
 
-  Widget _buildTrustedTag() {
-    return Row(
-      children: [
-        Container(width: 22, height: 2, color: const Color(0xFF1D9E75)),
-        const SizedBox(width: 8),
-        const Text(
-          'TRUSTED PARTNERS · 8 NEARBY',
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 1.3,
-            color: Color(0xFF1D9E75),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHeading() {
-    return RichText(
-      text: const TextSpan(
-        style: TextStyle(fontSize: 30, color: Color(0xFF0F2D22), height: 1.2),
-        children: [
-          TextSpan(text: 'Find your\n', style: TextStyle(fontWeight: FontWeight.w600)),
-          TextSpan(
-            text: 'distributor',
-            style: TextStyle(
-              fontStyle: FontStyle.italic,
-              fontWeight: FontWeight.w400,
-              color: Color(0xFF1D9E75),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSearchBar() {
     return Container(
       decoration: BoxDecoration(
@@ -228,69 +261,129 @@ class _DistributorsListScreenState extends State<DistributorsListScreen> {
           const SizedBox(width: 14),
           const Icon(Icons.search, size: 16, color: Color(0xFFAAAAAA)),
           const SizedBox(width: 8),
-          const Expanded(
+          Expanded(
             child: TextField(
+              controller: _searchCtrl,
+              onChanged: (_) => setState(() {}),
               decoration: const InputDecoration(
-                hintText: 'Search by name, code, area...',
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                fillColor: Colors.white
-              ),
+                  hintText: 'Search by name or code...',
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  fillColor: Colors.white),
             ),
           ),
-          Container(
-            padding: const EdgeInsets.all(10),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(width: 14, height: 1.5, color: const Color(0xFF888888)),
-                const SizedBox(height: 3),
-                Container(width: 10, height: 1.5, color: const Color(0xFF888888)),
-                const SizedBox(height: 3),
-                Container(width: 6, height: 1.5, color: const Color(0xFF888888)),
-              ],
+          if (_searchCtrl.text.trim().isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.close, size: 18, color: Color(0xFF888888)),
+              onPressed: () {
+                _searchCtrl.clear();
+                setState(() {});
+              },
             ),
-          ),
         ],
       ),
     );
   }
 
   Widget _buildFilterRow() {
-    return Row(
+    return Column(
       children: [
-        const Text(
-          'FILTERS:',
-          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF888888), letterSpacing: 0.5),
+        Row(
+          children: [
+            Expanded(
+              child: _dropdown(
+                value: _selectedState,
+                items: _states,
+                hint: 'State',
+                onChanged: (v) => setState(() => _selectedState = v),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _dropdown(
+                value: _selectedCity,
+                items: _cities,
+                hint: 'City',
+                onChanged: (v) => setState(() => _selectedCity = v),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 8),
-        _filterChip('Maharashtra', showLocation: true),
-        const SizedBox(width: 8),
-        _filterChip('Pune'),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _dropdown(
+                value: _selectedPincode,
+                items: _pincodes,
+                hint: 'Pincode',
+                onChanged: (v) => setState(() => _selectedPincode = v),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: TextButton(
+                onPressed: () {
+                  _searchCtrl.clear();
+                  setState(() {
+                    _selectedState = 'All';
+                    _selectedCity = 'All';
+                    _selectedPincode = 'All';
+                  });
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: primaryGreen,
+                  backgroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    side: BorderSide(color: primaryGreen.withOpacity(0.35)),
+                  ),
+                ),
+                child: const Text(
+                  'CLEAR FILTERS',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.2),
+                ),
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
 
-  Widget _filterChip(String label, {bool showLocation = false}) {
+  Widget _dropdown({
+    required String value,
+    required List<String> items,
+    required String hint,
+    required ValueChanged<String> onChanged,
+  }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFC8E6DA), width: 1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE2F0EB)),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (showLocation) ...[
-            const Icon(Icons.location_on_outlined, size: 11, color: Color(0xFF1D9E75)),
-            const SizedBox(width: 3),
-          ],
-          Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFF1D9E75))),
-          const SizedBox(width: 5),
-          const Text('✕', style: TextStyle(fontSize: 9, color: Color(0xFF999999))),
-        ],
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          isExpanded: true,
+          value: items.contains(value) ? value : 'All',
+          hint: Text(hint, overflow: TextOverflow.ellipsis),
+          items: items
+              .map(
+                (s) => DropdownMenuItem<String>(
+                  value: s,
+                  child: Text(s, maxLines: 1, overflow: TextOverflow.ellipsis),
+                ),
+              )
+              .toList(),
+          onChanged: (v) {
+            if (v == null) return;
+            onChanged(v);
+          },
+        ),
       ),
     );
   }
