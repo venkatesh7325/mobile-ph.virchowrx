@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+import '../../../core/network/api_client.dart';
 
 class EnquiryScreen extends StatefulWidget {
   const EnquiryScreen({super.key});
@@ -8,21 +11,148 @@ class EnquiryScreen extends StatefulWidget {
 }
 
 class _EnquiryScreenState extends State<EnquiryScreen> {
-  final TextEditingController _descController = TextEditingController(
-    text:
-    "Hi, I'd like to confirm availability of 25 units for next week's batch. Also, do you offer any volume pricing for orders above ₹10,000?",
-  );
-  String _selectedDistributor = 'CityMed Wholesale';
-  String _selectedProduct = 'Jusgo · 75mg/mL Inj';
+  final TextEditingController _descController = TextEditingController();
+  int? _selectedDistributorId;
+  int? _selectedProductId;
+  final List<_Option> _distributors = <_Option>[];
+  final List<_Option> _products = <_Option>[];
+  bool _loadingDistributors = false;
+  bool _loadingProducts = false;
+  bool _submitting = false;
+  String? _loadError;
+  String? _submitError;
+  String? _submitSuccess;
 
   static const Color primaryGreen = Color(0xFF0F6E56);
-  static const Color accentGreen = Color(0xFF1D9E75);
   static const Color bgColor = Color(0xFFF4FAF7);
+
+  bool get _isFormValid =>
+      _selectedDistributorId != null &&
+      _selectedProductId != null &&
+      _descController.text.trim().isNotEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDistributors();
+  }
 
   @override
   void dispose() {
     _descController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadDistributors() async {
+    setState(() {
+      _loadingDistributors = true;
+      _loadError = null;
+    });
+    try {
+      final api = Get.find<ApiClient>();
+      final response = await api.get('/products/distributors') as Map<String, dynamic>;
+      final raw = response['distributors'];
+      if (raw is! List) {
+        throw Exception('Unexpected distributors response');
+      }
+      final list = raw
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .map((m) {
+            final id = (m['id'] as num?)?.toInt() ?? int.tryParse('${m['id']}') ?? 0;
+            final name = (m['name'] ?? '').toString();
+            return _Option(id: id, label: name.isEmpty ? 'Distributor #$id' : name);
+          })
+          .where((o) => o.id > 0)
+          .toList();
+      setState(() {
+        _distributors
+          ..clear()
+          ..addAll(list);
+      });
+    } catch (e) {
+      setState(() => _loadError = 'Failed to load distributors. Please try again.');
+    } finally {
+      if (mounted) setState(() => _loadingDistributors = false);
+    }
+  }
+
+  Future<void> _loadProductsForDistributor(int distributorId) async {
+    setState(() {
+      _loadingProducts = true;
+      _loadError = null;
+      _products.clear();
+      _selectedProductId = null;
+    });
+    try {
+      final api = Get.find<ApiClient>();
+      final response = await api.get('/products/distributor/$distributorId') as Map<String, dynamic>;
+      final raw = response['products'];
+      if (raw is! List) {
+        throw Exception('Unexpected products response');
+      }
+      final list = <_Option>[];
+      for (final e in raw) {
+        if (e is! Map) continue;
+        final m = Map<String, dynamic>.from(e);
+        final product = m['product'] is Map ? Map<String, dynamic>.from(m['product'] as Map) : const <String, dynamic>{};
+        final pid = (product['id'] as num?)?.toInt() ?? int.tryParse('${product['id']}') ?? 0;
+        if (pid <= 0) continue;
+        final name = (product['name'] ?? '').toString().trim();
+        final sku = (product['sku'] ?? product['code'] ?? '').toString().trim();
+        final label = sku.isNotEmpty ? '$name ($sku)' : (name.isNotEmpty ? name : 'Product #$pid');
+        list.add(_Option(id: pid, label: label));
+      }
+      setState(() {
+        _products
+          ..clear()
+          ..addAll(list);
+      });
+    } catch (e) {
+      setState(() => _loadError = 'Failed to load products. Please try again.');
+    } finally {
+      if (mounted) setState(() => _loadingProducts = false);
+    }
+  }
+
+  Future<void> _submit() async {
+    setState(() {
+      _submitError = null;
+      _submitSuccess = null;
+    });
+    if (!_isFormValid) {
+      setState(() => _submitError = 'Please fill all required fields.');
+      return;
+    }
+    final distributorId = _selectedDistributorId!;
+    final productId = _selectedProductId!;
+    final description = _descController.text.trim();
+
+    setState(() => _submitting = true);
+    try {
+      final api = Get.find<ApiClient>();
+      await api.post(
+        '/enquiries',
+        body: {
+          'distributor_id': distributorId,
+          'product_id': productId,
+          'description': description,
+        },
+      );
+      if (!mounted) return;
+      setState(() {
+        _submitSuccess = 'Your enquiry has been submitted successfully.';
+        _descController.clear();
+        _selectedDistributorId = null;
+        _selectedProductId = null;
+        _products.clear();
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _submitError = 'Failed to submit enquiry. Please try again.');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
   }
 
   @override
@@ -98,167 +228,80 @@ class _EnquiryScreenState extends State<EnquiryScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSendTag(),
-          const SizedBox(height: 6),
-          _buildHeading(),
-          const SizedBox(height: 6),
           const Text(
-            'Connect directly with our distributors. Average response time 12 minutes.',
-            style: TextStyle(fontSize: 13, color: Color(0xFF888888), height: 1.5),
+            'Create an enquiry to a distributor about a specific product.',
+            style: TextStyle(fontSize: 14, color: Color(0xFF4B5563), height: 1.4),
           ),
-          const SizedBox(height: 20),
-          _buildLabel('Distributor', required: true),
-          const SizedBox(height: 8),
-          _buildDropdown(
-            value: _selectedDistributor,
-            icon: Icons.grid_view_rounded,
-            items: ['CityMed Wholesale', 'MedPlus Distribution', 'Sahayadri Pharma'],
-            onChanged: (v) => setState(() => _selectedDistributor = v!),
-          ),
-          const SizedBox(height: 16),
-          _buildLabel('Product', required: true),
-          const SizedBox(height: 8),
-          _buildDropdown(
-            value: _selectedProduct,
-            icon: Icons.link,
-            items: ['Jusgo · 75mg/mL Inj', 'Ranivox · INJ', 'Cefovix · INJ'],
-            onChanged: (v) => setState(() => _selectedProduct = v!),
-          ),
-          const SizedBox(height: 16),
-          _buildLabel('Description', required: true),
-          const SizedBox(height: 8),
-          _buildDescriptionField(),
-          const SizedBox(height: 16),
-          _buildSubmitBtn(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSendTag() {
-    return Row(
-      children: [
-        Container(width: 20, height: 2, color: accentGreen),
-        const SizedBox(width: 8),
-        const Text(
-          'SEND A REQUEST',
-          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 1.2, color: Color(0xFF1D9E75)),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHeading() {
-    return RichText(
-      text: const TextSpan(
-        style: TextStyle(fontSize: 28, color: Color(0xFF0F2D22), height: 1.15),
-        children: [
-          TextSpan(text: 'New ', style: TextStyle(fontWeight: FontWeight.w600)),
-          TextSpan(
-            text: 'enquiry',
-            style: TextStyle(fontStyle: FontStyle.italic, fontWeight: FontWeight.w400, color: Color(0xFF1D9E75)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLabel(String text, {bool required = false}) {
-    return Row(
-      children: [
-        Text(text, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF444444))),
-        if (required)
-          const Text(' *', style: TextStyle(fontSize: 13, color: Color(0xFF1D9E75), fontWeight: FontWeight.w600)),
-      ],
-    );
-  }
-
-  Widget _buildDropdown({
-    required String value,
-    required IconData icon,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFA),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE0E8E4), width: 1),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: value,
-          isExpanded: true,
-          icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF888888), size: 20),
-          style: const TextStyle(fontSize: 14, color: Color(0xFF1A1A1A), fontFamily: 'default'),
-          items: items
-              .map((item) => DropdownMenuItem(
-            value: item,
-            child: Row(
-              children: [
-                Icon(icon, size: 15, color: const Color(0xFF888888)),
-                const SizedBox(width: 10),
-                Text(item, style: const TextStyle(fontSize: 14, color: Color(0xFF1A1A1A))),
-              ],
+          if (_loadError != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              _loadError!,
+              style: const TextStyle(color: Color(0xFFB91C1C), fontWeight: FontWeight.w600),
             ),
-          ))
-              .toList(),
-          onChanged: onChanged,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDescriptionField() {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFA),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE0E8E4), width: 1),
-      ),
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TextField(
-            controller: _descController,
-            maxLines: 5,
-            maxLength: 500,
-            style: const TextStyle(fontSize: 13, color: Color(0xFF333333), height: 1.5),
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              isDense: true,
-              contentPadding: EdgeInsets.zero,
-              counterText: '',
+          ],
+          if (_submitError != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              _submitError!,
+              style: const TextStyle(color: Color(0xFFB91C1C), fontWeight: FontWeight.w600),
             ),
-            onChanged: (_) => setState(() {}),
+          ],
+          if (_submitSuccess != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              _submitSuccess!,
+              style: const TextStyle(color: Color(0xFF166534), fontWeight: FontWeight.w600),
+            ),
+          ],
+          const SizedBox(height: 18),
+          _buildDropdownFieldInt(
+            label: 'Distributor *',
+            value: _selectedDistributorId,
+            items: _distributors,
+            isLoading: _loadingDistributors,
+            enabled: !_loadingDistributors && !_submitting,
+            onChanged: (v) {
+              setState(() => _selectedDistributorId = v);
+              if (v != null) {
+                _loadProductsForDistributor(v);
+              } else {
+                setState(() {
+                  _products.clear();
+                  _selectedProductId = null;
+                });
+              }
+            },
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
+          _buildDropdownFieldInt(
+            label: 'Product *',
+            value: _selectedProductId,
+            items: _products,
+            isLoading: _loadingProducts,
+            enabled: _selectedDistributorId != null && !_loadingProducts && !_submitting,
+            onChanged: (v) => setState(() => _selectedProductId = v),
+          ),
+          const SizedBox(height: 16),
+          _buildDescriptionFieldWebLike(),
+          const SizedBox(height: 16),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              GestureDetector(
-                onTap: () {},
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFFDDDDDD), width: 1),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.attach_file, size: 13, color: Color(0xFF666666)),
-                      SizedBox(width: 5),
-                      Text('Attach file', style: TextStyle(fontSize: 12, color: Color(0xFF666666))),
-                    ],
-                  ),
+              ElevatedButton(
+                onPressed: (_isFormValid && !_submitting) ? _submit : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryGreen,
+                  disabledBackgroundColor: const Color(0xFFE5E7EB),
+                  disabledForegroundColor: const Color(0xFF9CA3AF),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  elevation: 0,
                 ),
-              ),
-              Text(
-                '${_descController.text.length} / 500',
-                style: const TextStyle(fontSize: 12, color: Color(0xFFAAAAAA)),
+                child: Text(
+                  _submitting ? 'SUBMITTING...' : 'SUBMIT ENQUIRY',
+                  style: const TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.2),
+                ),
               ),
             ],
           ),
@@ -267,26 +310,67 @@ class _EnquiryScreenState extends State<EnquiryScreen> {
     );
   }
 
-  Widget _buildSubmitBtn() {
-    return GestureDetector(
-      onTap: () {},
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: primaryGreen,
-          borderRadius: BorderRadius.circular(14),
+  Widget _buildDropdownFieldInt({
+    required String label,
+    required int? value,
+    required List<_Option> items,
+    required ValueChanged<int?> onChanged,
+    bool enabled = true,
+    bool isLoading = false,
+  }) {
+    final displayItems = items;
+    return DropdownButtonFormField<int>(
+      value: value,
+      items: displayItems
+          .map((o) => DropdownMenuItem<int>(value: o.id, child: Text(o.label)))
+          .toList(),
+      onChanged: enabled ? onChanged : null,
+      icon: isLoading
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.keyboard_arrow_down),
+      decoration: InputDecoration(
+        labelText: label,
+        floatingLabelBehavior: FloatingLabelBehavior.auto,
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
         ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.send, size: 16, color: Colors.white),
-            SizedBox(width: 8),
-            Text(
-              'Submit enquiry',
-              style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
-            ),
-          ],
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: primaryGreen, width: 1.6),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDescriptionFieldWebLike() {
+    return TextField(
+      controller: _descController,
+      minLines: 4,
+      maxLines: 6,
+      onChanged: (_) => setState(() {}),
+      decoration: InputDecoration(
+        labelText: 'Description *',
+        alignLabelWithHint: true,
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: primaryGreen, width: 1.6),
         ),
       ),
     );
@@ -355,4 +439,10 @@ class _EnquiryScreenState extends State<EnquiryScreen> {
       child: const Icon(Icons.headset_mic_outlined, color: Colors.white, size: 22),
     );
   }
+}
+
+class _Option {
+  final int id;
+  final String label;
+  const _Option({required this.id, required this.label});
 }
