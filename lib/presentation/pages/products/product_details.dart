@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'dart:async';
 
 import '../../../core/network/api_client.dart';
 import '../../../domain/entities/product_entity.dart';
@@ -31,6 +32,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   List<_DistributorOffer> _offers = const [];
   bool _offersLoading = false;
   String? _offersError;
+  final _distSearchCtrl = TextEditingController();
+  String _distState = 'All';
+  String _distCity = 'All';
+  String _distPincode = 'All';
   final Map<String, TextEditingController> _qtyControllers = {};
 
   @override
@@ -43,6 +48,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   @override
   void dispose() {
+    _distSearchCtrl.dispose();
     for (final c in _qtyControllers.values) {
       c.dispose();
     }
@@ -418,6 +424,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
       backgroundColor: Colors.transparent,
       builder: (_) => DraggableScrollableSheet(
         initialChildSize: 0.80,
@@ -456,7 +464,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             letterSpacing: inSheet ? 0 : 1.2,
           ),
         ),
-        if (!inSheet)
+        if (inSheet)
+          IconButton(
+            onPressed: () => Navigator.of(context).pop(),
+            icon: const Icon(Icons.close, color: ProductDetailScreen.darkText),
+            tooltip: 'Close',
+          )
+        else
           TextButton(
             onPressed: _showDistributorsSheet,
             child: const Text('View all', style: TextStyle(color: ProductDetailScreen.primaryTeal)),
@@ -495,12 +509,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       );
     }
 
-    final list = _offers;
+    final list = _filteredOffers();
     if (list.isEmpty) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           header,
+          const SizedBox(height: 10),
+          _buildDistributorFilters(inSheet: inSheet),
           const SizedBox(height: 10),
           const Text('No distributors available', style: TextStyle(color: Colors.grey)),
         ],
@@ -512,6 +528,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       children: [
         header,
         const SizedBox(height: 10),
+        _buildDistributorFilters(inSheet: inSheet),
+        const SizedBox(height: 12),
         ListView.separated(
           physics: const NeverScrollableScrollPhysics(),
           shrinkWrap: true,
@@ -611,6 +629,147 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
+  List<_DistributorOffer> _filteredOffers() {
+    final q = _distSearchCtrl.text.trim().toLowerCase();
+    return _offers.where((o) {
+      if (_distState != 'All' && o.state.toLowerCase() != _distState.toLowerCase()) return false;
+      if (_distCity != 'All' && o.city.toLowerCase() != _distCity.toLowerCase()) return false;
+      if (_distPincode != 'All' && o.pincode != _distPincode) return false;
+      if (q.isEmpty) return true;
+      return o.distributorName.toLowerCase().contains(q) ||
+          o.phone.toLowerCase().contains(q) ||
+          o.addressLine.toLowerCase().contains(q);
+    }).toList();
+  }
+
+  Widget _buildDistributorFilters({required bool inSheet}) {
+    final states = <String>{};
+    final cities = <String>{};
+    final pincodes = <String>{};
+    for (final o in _offers) {
+      if (o.state.trim().isNotEmpty) states.add(o.state.trim());
+      if (o.city.trim().isNotEmpty) cities.add(o.city.trim());
+      if (o.pincode.trim().isNotEmpty) pincodes.add(o.pincode.trim());
+    }
+    final stateList = ['All', ...states.toList()..sort()];
+    final cityList = ['All', ...cities.toList()..sort()];
+    final pinList = ['All', ...pincodes.toList()..sort()];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.filter_list, size: 16, color: Colors.grey),
+            const SizedBox(width: 8),
+            Text(
+              'Filter Distributors',
+              style: TextStyle(
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w700,
+                fontSize: inSheet ? 13 : 12,
+              ),
+            ),
+            const Spacer(),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _distSearchCtrl.clear();
+                  _distState = 'All';
+                  _distCity = 'All';
+                  _distPincode = 'All';
+                });
+              },
+              child: const Text('CLEAR FILTERS', style: TextStyle(fontSize: 12)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: TextField(
+                controller: _distSearchCtrl,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  isDense: true,
+                  hintText: 'Search by Distributor ...',
+                  prefixIcon: const Icon(Icons.search, size: 18),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _miniDropdown(
+                value: _distState,
+                items: stateList,
+                hint: 'State',
+                onChanged: (v) => setState(() => _distState = v),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _miniDropdown(
+                value: _distCity,
+                items: cityList,
+                hint: 'City',
+                onChanged: (v) => setState(() => _distCity = v),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _miniDropdown(
+                value: _distPincode,
+                items: pinList,
+                hint: 'Pincode',
+                onChanged: (v) => setState(() => _distPincode = v),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _miniDropdown({
+    required String value,
+    required List<String> items,
+    required String hint,
+    required ValueChanged<String> onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          isExpanded: true,
+          value: items.contains(value) ? value : 'All',
+          items: items
+              .map((s) => DropdownMenuItem<String>(
+                    value: s,
+                    child: Text(s, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ))
+              .toList(),
+          onChanged: (v) {
+            if (v == null) return;
+            onChanged(v);
+          },
+        ),
+      ),
+    );
+  }
+
   static Widget _miniInfo(IconData icon, String text) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -665,6 +824,9 @@ class _DistributorOffer {
   final String distributorName;
   final String phone;
   final String addressLine;
+  final String city;
+  final String state;
+  final String pincode;
   final double pharmacyPrice;
   final int? minOrder;
   final int? maxOrder;
@@ -677,6 +839,9 @@ class _DistributorOffer {
     required this.distributorName,
     required this.phone,
     required this.addressLine,
+    required this.city,
+    required this.state,
+    required this.pincode,
     required this.pharmacyPrice,
     required this.minOrder,
     required this.maxOrder,
@@ -697,10 +862,13 @@ class _DistributorOffer {
       final dist = m['distributor'] is Map ? Map<String, dynamic>.from(m['distributor'] as Map) : const <String, dynamic>{};
       final name = dist['name']?.toString() ?? 'Distributor';
       final phone = dist['phone']?.toString() ?? '';
+      final city = dist['city']?.toString() ?? '';
+      final state = dist['state']?.toString() ?? '';
+      final pincode = dist['pincode']?.toString() ?? '';
       final addressParts = <String>[
         dist['address']?.toString() ?? '',
-        dist['city']?.toString() ?? '',
-        dist['state']?.toString() ?? '',
+        city,
+        state,
       ].where((s) => s.trim().isNotEmpty).toList();
       final address = addressParts.join(', ');
 
@@ -715,6 +883,9 @@ class _DistributorOffer {
           distributorName: name,
           phone: phone,
           addressLine: address,
+          city: city,
+          state: state,
+          pincode: pincode,
           pharmacyPrice: price,
           minOrder: (m['min_order'] as num?)?.toInt() ?? (m['min_qty'] as num?)?.toInt(),
           maxOrder: (m['max_order'] as num?)?.toInt() ?? (m['max_qty'] as num?)?.toInt(),
@@ -749,6 +920,7 @@ class _ProductDetailImageCarousel extends StatefulWidget {
 class _ProductDetailImageCarouselState extends State<_ProductDetailImageCarousel> {
   late final PageController _pageController;
   int _index = 0;
+  Timer? _autoTimer;
 
   static const double _imageHeight = 220;
 
@@ -758,12 +930,43 @@ class _ProductDetailImageCarouselState extends State<_ProductDetailImageCarousel
   void initState() {
     super.initState();
     _pageController = PageController(viewportFraction: widget.urls.length > 1 ? 0.88 : 1.0);
+    _startAutoScrollIfNeeded();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ProductDetailImageCarousel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.urls.length != widget.urls.length) {
+      _index = 0;
+      _restartAutoScroll();
+    }
   }
 
   @override
   void dispose() {
+    _autoTimer?.cancel();
     _pageController.dispose();
     super.dispose();
+  }
+
+  void _restartAutoScroll() {
+    _autoTimer?.cancel();
+    _autoTimer = null;
+    _startAutoScrollIfNeeded();
+  }
+
+  void _startAutoScrollIfNeeded() {
+    if (widget.urls.length <= 1) return;
+    _autoTimer ??= Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!mounted) return;
+      if (!_pageController.hasClients) return;
+      final next = (_index + 1) % widget.urls.length;
+      _pageController.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 450),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   @override

@@ -98,11 +98,6 @@ class _ProductNetworkImageState extends State<ProductNetworkImage> {
         );
       },
       errorBuilder: (context, error, stackTrace) {
-        if (kDebugMode) {
-          debugPrint(
-              '[ProductNetworkImage] failed to load: ${url.length > 120 ? '${url.substring(0, 120)}…' : url}');
-          debugPrint('[ProductNetworkImage] error: $error');
-        }
         // If the request fails (commonly 404 on missing blobs), render nothing
         // and do not attempt fallback URLs or placeholders.
         return SizedBox(width: widget.width, height: widget.height);
