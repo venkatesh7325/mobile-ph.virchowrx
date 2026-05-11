@@ -30,9 +30,10 @@ class ProductsPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeaderSection(controller),
+         //   _buildHeaderSection(controller),
             _buildSearchBar(controller),
             _buildCategoryFilter(controller),
+            const SizedBox(height: 6),
             Expanded(
               child: Obx(() {
                 if (controller.isLoading.value && controller.products.isEmpty) {
@@ -42,7 +43,7 @@ class ProductsPage extends StatelessWidget {
                   onRefresh: controller.refresh,
                   child: ListView.builder(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
                     itemCount: controller.filteredProducts.length,
                     itemBuilder: (context, i) {
                       final list = controller.filteredProducts;
@@ -80,46 +81,6 @@ class ProductsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeaderSection(ProductController controller) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(width: 16, height: 1, color: primaryTeal),
-              const SizedBox(width: 8),
-              const Text('CITYMED WHOLESALE',
-                  style: TextStyle(color: primaryTeal, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.2)),
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Available', style: TextStyle(fontFamily: 'serif', fontSize: 32, color: darkGrey)),
-                  Text('medicines', style: TextStyle(fontFamily: 'serif', fontSize: 32, color: primaryTeal, fontStyle: FontStyle.italic, height: 0.8)),
-                ],
-              ),
-              Obx(() => Column(
-                children: [
-                  Text('${controller.filteredProducts.length}',
-                      style: const TextStyle(fontFamily: 'serif', fontSize: 32, color: darkGrey)),
-                  const Text('PRODUCTS',
-                      style: TextStyle(color: mutedText, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1)),
-                ],
-              )),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSearchBar(ProductController controller) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 6),
@@ -146,7 +107,7 @@ class ProductsPage extends StatelessWidget {
 
   Widget _buildCategoryFilter(ProductController controller) {
     return SizedBox(
-      height: 40,
+      height: 44,
       child: Obx(() => ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -159,7 +120,7 @@ class ProductsPage extends StatelessWidget {
             child: InkWell(
               onTap: () => controller.setCategory(cat),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: isSelected ? darkGrey : Colors.white,
@@ -211,7 +172,8 @@ class _ProductCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 14, offset: const Offset(0, 6))],
         ),
         child: Column(
           children: [

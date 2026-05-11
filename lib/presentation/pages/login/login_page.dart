@@ -105,41 +105,41 @@ class _LoginPageState extends State<LoginPage> {
         resizeToAvoidBottomInset: true,
         body: LayoutBuilder(
           builder: (context, constraints) {
-            final cardTop = constraints.maxHeight * 0.22 + 12;
+            final cardTop = constraints.maxHeight * 0.18 + 12;
 
             return Stack(
               children: [
                 const Positioned.fill(child: _GradientBackground()),
 
-                Positioned.fill(
-                  child: IgnorePointer(
-                    child: CustomPaint(painter: _DotPatternPainter()),
-                  ),
-                ),
+                // Positioned.fill(
+                //   child: IgnorePointer(
+                //     child: CustomPaint(painter: _DotPatternPainter()),
+                //   ),
+                // ),
 
-                const Positioned(
-                  top: 60,
-                  right: -120,
-                  child: IgnorePointer(child: _RingDecoration()),
-                ),
+                // const Positioned(
+                //   top: 60,
+                //   right: -120,
+                //   child: IgnorePointer(child: _RingDecoration()),
+                // ),
 
-                const Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: SafeArea(
-                    bottom: false,
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(24, 16, 16, 0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _BrandRow(),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+                // const Positioned(
+                //   top: 0,
+                //   left: 0,
+                //   right: 0,
+                //   child: SafeArea(
+                //     bottom: false,
+                //     child: Padding(
+                //       padding: EdgeInsets.fromLTRB(24, 16, 16, 0),
+                //       child: Column(
+                //         crossAxisAlignment: CrossAxisAlignment.start,
+                //         children: [
+                //           _BrandRow(),
+                //         ],
+                //       ),
+                //     ),
+                //   ),
+                // ),
 
                 /// ✅ FIXED SECTION
                 Positioned(
@@ -170,7 +170,7 @@ class _LoginPageState extends State<LoginPage> {
 
                 // Logo above the login card
                 Positioned(
-                  top: cardTop - 44,
+                  top: cardTop - 54,
                   left: 0,
                   right: 0,
                   child: IgnorePointer(
@@ -179,29 +179,30 @@ class _LoginPageState extends State<LoginPage> {
                         'assets/images/virchow_rx_logo.svg',
                         height: 34,
                         fit: BoxFit.contain,
+                       // colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
                       ),
                     ),
                   ),
                 ),
 
                 // Bottom footer: tagline
-                const Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: SafeArea(
-                    top: false,
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(24, 0, 24, 18),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _LoginHeroTagline(),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+                // const Positioned(
+                //   left: 0,
+                //   right: 0,
+                //   bottom: 0,
+                //   child: SafeArea(
+                //     top: false,
+                //     child: Padding(
+                //       padding: EdgeInsets.fromLTRB(24, 0, 24, 18),
+                //       child: Column(
+                //         mainAxisSize: MainAxisSize.min,
+                //         children: [
+                //           _LoginHeroTagline(),
+                //         ],
+                //       ),
+                //     ),
+                //   ),
+                // ),
               ],
             );
           },

@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
-// Note: You may not need the 'badges' package if you use standard Containers for pills,
-// but I have kept it for the Cart as per your original logic.
-import 'package:badges/badges.dart' as badges;
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../core/constants/app_routes.dart';
 import '../../core/constants/app_strings.dart';
 import '../../dependency_injection.dart';
-import '../controllers/cart_controller.dart';
 import '../controllers/login_controller.dart';
 
 class SideMenu extends StatelessWidget {
@@ -24,7 +20,6 @@ class SideMenu extends StatelessWidget {
   final Color accentCyan = const Color(0xFF60E0CE); // Cyan for text and dots
   final Color textMuted = const Color(0xFF6E8D88); // Muted grey/green text
   final Color dangerCoral = const Color(0xFFF27B7B); // Sign out text/icon
-  final Color warningYellow = const Color(0xFFD4B36A); // Pending badge text
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +50,6 @@ class SideMenu extends StatelessWidget {
                     label: AppStrings.products, // Default
                     route: AppRoutes.products,
                     currentRoute: effectiveRoute,
-                    trailing: Text('1.4K', style: TextStyle(color: textMuted, fontSize: 12)),
                     onTap: () => _navigate(context, AppRoutes.products),
                   ),
                   _MenuItem(
@@ -70,7 +64,6 @@ class SideMenu extends StatelessWidget {
                     label: AppStrings.findDistributor, // or 'Find distributor'
                     route: AppRoutes.findDistributor,
                     currentRoute: effectiveRoute,
-                    trailing: Text('8', style: TextStyle(color: textMuted, fontSize: 12)),
                     onTap: () => _navigate(context, AppRoutes.findDistributor),
                   ),
                   const SizedBox(height: 24),
@@ -80,7 +73,6 @@ class SideMenu extends StatelessWidget {
                     label: AppStrings.orders, // or 'Orders'
                     route: AppRoutes.orders,
                     currentRoute: effectiveRoute,
-                    trailing: _buildPendingPill('3 pending'),
                     onTap: () => _navigate(context, AppRoutes.orders),
                   ),
                   _MenuItem(
@@ -88,10 +80,12 @@ class SideMenu extends StatelessWidget {
                     label: AppStrings.enquiry, // or 'Enquiries'
                     route: AppRoutes.enquiry,
                     currentRoute: effectiveRoute,
-                    trailing: Text('2', style: TextStyle(color: textMuted, fontSize: 12)),
                     onTap: () => _navigate(context, AppRoutes.enquiry),
                   ),
-                  _CartMenuItem(
+                  _MenuItem(
+                    icon: Icons.shopping_cart_outlined,
+                    label: AppStrings.cart,
+                    route: AppRoutes.cart,
                     currentRoute: effectiveRoute,
                     onTap: () => _navigate(context, AppRoutes.cart),
                   ),
@@ -226,17 +220,6 @@ class SideMenu extends StatelessWidget {
     );
   }
 
-  Widget _buildPendingPill(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFF454030), // Dark yellow-ish background
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(text, style: TextStyle(color: warningYellow, fontSize: 11, fontWeight: FontWeight.w600)),
-    );
-  }
-
   Widget _buildFooter(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
@@ -304,7 +287,6 @@ class _MenuItem extends StatelessWidget {
   final String route;
   final String currentRoute;
   final VoidCallback onTap;
-  final Widget? trailing;
 
   const _MenuItem({
     required this.icon,
@@ -312,7 +294,6 @@ class _MenuItem extends StatelessWidget {
     required this.route,
     required this.currentRoute,
     required this.onTap,
-    this.trailing,
   });
 
   @override
@@ -347,49 +328,11 @@ class _MenuItem extends StatelessWidget {
             fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
           ),
         ),
-        trailing: isActive
-            ? const Icon(Icons.circle, color: Color(0xFF60E0CE), size: 10)
-            : trailing,
+        trailing: isActive ? const Icon(Icons.circle, color: Color(0xFF60E0CE), size: 10) : null,
         onTap: onTap,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         dense: true,
       ),
-    );
-  }
-}
-
-class _CartMenuItem extends StatelessWidget {
-  final String currentRoute;
-  final VoidCallback onTap;
-
-  const _CartMenuItem({required this.currentRoute, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GetBuilder<CartController>(
-      init: Get.isRegistered<CartController>() ? null : CartController(),
-      builder: (controller) => Obx(() {
-        final count = controller.itemCount;
-        return _MenuItem(
-          icon: Icons.shopping_cart_outlined,
-          label: AppStrings.cart, // or 'Cart'
-          route: AppRoutes.cart,
-          currentRoute: currentRoute,
-          onTap: onTap,
-          trailing: count > 0
-              ? badges.Badge(
-            badgeContent: Text(
-              '$count',
-              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600),
-            ),
-            badgeStyle: const badges.BadgeStyle(
-              badgeColor: Color(0xFFFF5252), // The exact red used in the badge
-              elevation: 0,
-            ),
-          )
-              : null,
-        );
-      }),
     );
   }
 }
