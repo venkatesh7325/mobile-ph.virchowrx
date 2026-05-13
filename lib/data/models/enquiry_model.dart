@@ -11,6 +11,13 @@ class EnquiryModel extends EnquiryEntity {
     super.response,
     super.productId,
     super.productName,
+    super.distributorName,
+    super.productSku,
+    super.replyPrice,
+    super.replyAt,
+    super.replyUserDisplay,
+    super.replyAccepted,
+    super.replyAcceptedAt,
   });
 
   factory EnquiryModel.fromJson(Map<String, dynamic> json) => EnquiryModel(
@@ -27,7 +34,23 @@ class EnquiryModel extends EnquiryEntity {
 
   factory EnquiryModel.fromPharmacy(Map<String, dynamic> json) {
     final product = json['product'] as Map<String, dynamic>?;
+    final distributor = json['distributor'] as Map<String, dynamic>?;
+    final replyUser = json['reply_user'] as Map<String, dynamic>?;
     final reply = json['reply_description']?.toString();
+
+    String? replyUserDisplay;
+    if (replyUser != null) {
+      final fn = replyUser['first_name']?.toString().trim() ?? '';
+      final ln = replyUser['last_name']?.toString().trim() ?? '';
+      final combined = '$fn $ln'.trim();
+      replyUserDisplay =
+          combined.isNotEmpty ? combined : replyUser['username']?.toString();
+    }
+
+    final replyAccepted = json['reply_accepted'] == true ||
+        json['reply_accepted'] == 1 ||
+        json['reply_accepted']?.toString().toLowerCase() == 'true';
+
     return EnquiryModel(
       id: json['id']?.toString() ?? '',
       subject: product?['name']?.toString() ?? 'Enquiry',
@@ -38,6 +61,13 @@ class EnquiryModel extends EnquiryEntity {
       response: reply,
       productId: json['product_id']?.toString(),
       productName: product?['name']?.toString(),
+      distributorName: distributor?['name']?.toString(),
+      productSku: product?['sku']?.toString(),
+      replyPrice: (json['reply_price'] as num?)?.toDouble(),
+      replyAt: DateTime.tryParse(json['reply_at']?.toString() ?? ''),
+      replyUserDisplay: replyUserDisplay,
+      replyAccepted: replyAccepted,
+      replyAcceptedAt: DateTime.tryParse(json['reply_accepted_at']?.toString() ?? ''),
     );
   }
 

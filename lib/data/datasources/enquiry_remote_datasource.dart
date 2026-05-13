@@ -3,9 +3,10 @@ import '../../core/network/api_client.dart';
 import '../models/enquiry_model.dart';
 
 abstract class EnquiryRemoteDataSource {
-  Future<List<EnquiryModel>> getEnquiries({int page = 1, int limit = 20});
+  Future<List<EnquiryModel>> getEnquiries({int page = 1, int limit = 20, String? search});
   Future<EnquiryModel> getEnquiryById(String id);
   Future<EnquiryModel> submitEnquiry(Map<String, dynamic> data);
+  Future<EnquiryModel> acceptEnquiryReply(int enquiryId);
 }
 
 class EnquiryRemoteDataSourceImpl implements EnquiryRemoteDataSource {
@@ -13,8 +14,16 @@ class EnquiryRemoteDataSourceImpl implements EnquiryRemoteDataSource {
   const EnquiryRemoteDataSourceImpl({required this.apiClient});
 
   @override
-  Future<List<EnquiryModel>> getEnquiries({int page = 1, int limit = 20}) async {
-    final response = await apiClient.get('/enquiries') as Map<String, dynamic>;
+  Future<List<EnquiryModel>> getEnquiries({int page = 1, int limit = 20, String? search}) async {
+    final q = search?.trim();
+    final queryParams = <String, dynamic>{};
+    if (q != null && q.isNotEmpty) {
+      queryParams['search'] = q;
+    }
+    final response = await apiClient.get(
+      '/enquiries',
+      queryParams: queryParams.isEmpty ? null : queryParams,
+    ) as Map<String, dynamic>;
     final raw = response['enquiries'];
     if (raw is! List) return [];
     return raw.map((e) => EnquiryModel.fromPharmacy(e as Map<String, dynamic>)).toList();
@@ -61,6 +70,19 @@ class EnquiryRemoteDataSourceImpl implements EnquiryRemoteDataSource {
       return EnquiryModel.fromPharmacy(response);
     }
     throw const ParseException(message: 'Unexpected enquiry create response');
+  }
+
+  @override
+  Future<EnquiryModel> acceptEnquiryReply(int enquiryId) async {
+    final response = await apiClient.post('/enquiries/$enquiryId/accept') as Map<String, dynamic>;
+    final enquiry = response['enquiry'] as Map<String, dynamic>?;
+    if (enquiry != null) {
+      return EnquiryModel.fromPharmacy(enquiry);
+    }
+    if (response['id'] != null) {
+      return EnquiryModel.fromPharmacy(response);
+    }
+    throw const ParseException(message: 'Unexpected accept reply response');
   }
 
   int? _asInt(dynamic v) {

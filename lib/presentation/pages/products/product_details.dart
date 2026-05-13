@@ -56,14 +56,62 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     super.dispose();
   }
 
+  @override
+  void didUpdateWidget(covariant ProductDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final oldId = _idForProduct(oldWidget.product);
+    final newId = _idForProduct(widget.product);
+    if (oldId != newId && newId.isNotEmpty) {
+      _reloadProductDetailState();
+    }
+  }
+
+  static String _idForProduct(Object? o) => o is ProductEntity ? o.id : '';
+
+  bool _isStaleProductResponse(String requestedProductId) {
+    if (!mounted) return true;
+    return _productEntity()?.id != requestedProductId;
+  }
+
+  /// When [widget.product] identity changes without a full dispose (rare), or to
+  /// centralize reset logic used from [didUpdateWidget].
+  void _reloadProductDetailState() {
+    final p = _productEntity();
+    setState(() {
+      _heroUrls = _sanitizeHeroUrls(_heroImageUrlsFromEntity(p));
+      _offers = const [];
+      _offersError = null;
+      _offersLoading = false;
+      _distState = 'All';
+      _distCity = 'All';
+      _distPincode = 'All';
+      _distSearchCtrl.clear();
+    });
+    _loadProductImagesFromApi();
+    _loadDistributorOffers();
+  }
+
   Future<void> _loadProductImagesFromApi() async {
     final p = _productEntity();
     if (p == null || p.id.isEmpty) return;
+    final requestedId = p.id;
     final result = await Get.find<ProductRepository>().getProductImageUrls(p.id);
-    if (!mounted) return;
+    if (_isStaleProductResponse(requestedId)) return;
     result.fold((_) {}, (r) {
-      final cleaned = _sanitizeHeroUrls(r.urls);
+      if (_isStaleProductResponse(requestedId)) return;
+      // Merge API + catalog URLs so we don't replace working catalog images
+      // with API "full" URLs that 404, and so list thumb can back up gallery slots.
+      final current = _productEntity();
+      final fromEntity = _heroImageUrlsFromEntity(current);
+      final thumb = r.thumbnailUrl?.trim();
+      final ordered = <String>[
+        ...r.urls,
+        if (thumb != null && thumb.isNotEmpty) thumb,
+        ...fromEntity,
+      ];
+      final cleaned = _sanitizeHeroUrls(ordered);
       if (cleaned.isNotEmpty) {
+        if (_isStaleProductResponse(requestedId)) return;
         setState(() => _heroUrls = cleaned);
       }
     });
@@ -75,23 +123,28 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Future<void> _loadDistributorOffers() async {
     final p = _productEntity();
     if (p == null || p.id.isEmpty) return;
+    final requestedId = p.id;
     setState(() {
       _offersLoading = true;
       _offersError = null;
     });
     try {
-      final pid = int.tryParse(p.id);
+      final pid = int.tryParse(requestedId);
       if (pid == null) {
-        setState(() {
-          _offers = const [];
-          _offersError = 'Invalid product id';
-        });
+        if (!_isStaleProductResponse(requestedId)) {
+          setState(() {
+            _offers = const [];
+            _offersError = 'Invalid product id';
+          });
+        }
         return;
       }
       final api = Get.find<ApiClient>();
       final res = await api.get('/products/cataloged/by-product/$pid') as Map<String, dynamic>;
+      if (_isStaleProductResponse(requestedId)) return;
       final raw = res['products'];
       if (raw is! List || raw.isEmpty) {
+        if (_isStaleProductResponse(requestedId)) return;
         setState(() {
           _offers = const [];
           _offersError = 'No distributors found';
@@ -100,6 +153,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       }
       final row = raw.first;
       if (row is! Map) {
+        if (_isStaleProductResponse(requestedId)) return;
         setState(() {
           _offers = const [];
           _offersError = 'Unexpected distributor response';
@@ -107,11 +161,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         return;
       }
       final offers = _DistributorOffer.parseList(Map<String, dynamic>.from(row));
+      if (_isStaleProductResponse(requestedId)) return;
       setState(() => _offers = offers);
     } catch (e) {
-      setState(() => _offersError = 'Could not load distributors');
+      if (!_isStaleProductResponse(requestedId)) {
+        setState(() => _offersError = 'Could not load distributors');
+      }
     } finally {
-      if (mounted) {
+      if (mounted && !_isStaleProductResponse(requestedId)) {
         setState(() => _offersLoading = false);
       }
     }
@@ -133,7 +190,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
     bool looksLikeThumb(String u) {
       final s = u.toLowerCase();
-      return s.contains('thumb') || s.contains('-thumbs/') || s.contains('/thumbs/');
+      // Avoid matching unrelated path segments (e.g. "photography") that contain "thumb".
+      return s.contains('-thumbs/') ||
+          s.contains('/thumbs/') ||
+          s.contains('/thumb/') ||
+          s.contains('thumburl') ||
+          s.contains('thumb_url');
     }
 
     void add(String u) {
@@ -301,7 +363,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 _ProductDetailImageCarousel(
-                  key: ValueKey(urls.join('|')),
+                  key: ValueKey('${p?.id ?? ''}|${urls.join('|')}'),
                   urls: urls,
                   width: w,
                   mockFallback: _mockHeroBox(mockName),
@@ -954,6 +1016,19 @@ class _ProductDetailImageCarouselState extends State<_ProductDetailImageCarousel
 
   static const double _imageHeight = 220;
 
+  /// Another resolved URL from the same product to try if the slide’s primary fails.
+  static String? _carouselFallbackUrl(List<String> urls, int i) {
+    if (urls.length <= 1) return null;
+    final primary = urls[i].trim();
+    for (var j = 0; j < urls.length; j++) {
+      if (j == i) continue;
+      final u = urls[j].trim();
+      if (u.isEmpty || u == primary) continue;
+      return u;
+    }
+    return null;
+  }
+
   int get _pageCount => widget.urls.isEmpty ? 1 : widget.urls.length;
 
   @override
@@ -1001,8 +1076,13 @@ class _ProductDetailImageCarouselState extends State<_ProductDetailImageCarousel
 
   @override
   Widget build(BuildContext context) {
-    // If there are no real images, don't render any default/placeholder image.
-    if (widget.urls.isEmpty) return const SizedBox.shrink();
+    if (widget.urls.isEmpty) {
+      return SizedBox(
+        height: _imageHeight,
+        width: widget.width,
+        child: Center(child: widget.mockFallback),
+      );
+    }
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1014,10 +1094,13 @@ class _ProductDetailImageCarouselState extends State<_ProductDetailImageCarousel
             itemCount: _pageCount,
             onPageChanged: (i) => setState(() => _index = i),
             itemBuilder: (context, i) {
+              final primary = widget.urls[i];
+              final fb = _carouselFallbackUrl(widget.urls, i);
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: ProductNetworkImage(
-                  imageUrl: widget.urls[i],
+                  imageUrl: primary,
+                  fallbackImageUrl: fb,
                   width: widget.width,
                   height: _imageHeight,
                   fit: BoxFit.contain,

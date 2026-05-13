@@ -227,19 +227,8 @@ class SideMenu extends StatelessWidget {
         border: Border(top: BorderSide(color: Colors.white.withOpacity(0.05), width: 1)),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          InkWell(
-            onTap: () {},
-            child: Row(
-              children: [
-                Icon(Icons.settings_outlined, color: textMuted, size: 20),
-                const SizedBox(width: 8),
-                Text('Settings', style: TextStyle(color: textMuted, fontSize: 14)),
-              ],
-            ),
-          ),
-          Container(height: 16, width: 1, color: Colors.white.withOpacity(0.1)),
           InkWell(
             onTap: () async {
               Navigator.of(context).pop();

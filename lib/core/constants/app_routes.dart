@@ -6,7 +6,12 @@ class AppRoutes {
   static const String register = '/register';
   static const String dashboard = '/dashboard';
   static const String products = '/products';
+  /// Route pattern for [GoRoute]; use [productDetailPath] when calling [context.push].
   static const String productDetail = '/products/:id';
+
+  /// Navigate with the real catalog id, e.g. `/products/42` (required for correct routing).
+  static String productDetailPath(String productId) =>
+      '/products/${Uri.encodeComponent(productId.trim())}';
   static const String findDistributor = '/find-distributor';
   static const String orders = '/orders';
   static const String orderDetail = '/orders/:id';

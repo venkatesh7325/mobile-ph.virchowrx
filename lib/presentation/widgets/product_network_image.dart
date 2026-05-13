@@ -1,15 +1,14 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 
 /// Loads a product image from the network with loading and error fallbacks.
 ///
-/// When [fallbackImageUrl] is set and the primary URL fails with **404** (common
-/// when a `-thumbs/` blob is missing but the full image exists), one retry uses
-/// the fallback URL.
+/// When [fallbackImageUrl] is set and differs from [imageUrl], a failed load on
+/// the primary URL triggers one retry with the fallback URL. If both fail, or
+/// there is no URL, [fallback] is shown.
 class ProductNetworkImage extends StatefulWidget {
   final String? imageUrl;
-  /// Tried after primary when primary returns 404 (e.g. full-size blob vs missing thumb).
+  /// Tried once after primary fails (e.g. full-size vs missing thumb blob).
   final String? fallbackImageUrl;
   final double? width;
   final double? height;
@@ -33,12 +32,15 @@ class ProductNetworkImage extends StatefulWidget {
 }
 
 class _ProductNetworkImageState extends State<ProductNetworkImage> {
-  late String? _activeUrl;
+  /// Current network URL, or null to show [widget.fallback] after load failure.
+  String? _networkUrl;
+  bool _triedAlternateNetworkUrl = false;
 
   @override
   void initState() {
     super.initState();
-    _activeUrl = _pickInitialUrl();
+    _networkUrl = _initialNetworkUrl();
+    _triedAlternateNetworkUrl = false;
   }
 
   @override
@@ -46,11 +48,12 @@ class _ProductNetworkImageState extends State<ProductNetworkImage> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.imageUrl != widget.imageUrl ||
         oldWidget.fallbackImageUrl != widget.fallbackImageUrl) {
-      _activeUrl = _pickInitialUrl();
+      _networkUrl = _initialNetworkUrl();
+      _triedAlternateNetworkUrl = false;
     }
   }
 
-  String? _pickInitialUrl() {
+  String? _initialNetworkUrl() {
     final primary = widget.imageUrl?.trim();
     if (primary != null && primary.isNotEmpty) return primary;
     final fb = widget.fallbackImageUrl?.trim();
@@ -58,12 +61,37 @@ class _ProductNetworkImageState extends State<ProductNetworkImage> {
     return null;
   }
 
+  String? _distinctFallbackUrl() {
+    final primary = widget.imageUrl?.trim();
+    final fb = widget.fallbackImageUrl?.trim();
+    if (fb == null || fb.isEmpty || fb == primary) return null;
+    return fb;
+  }
+
+  void _onImageLoadFailed() {
+    final primary = widget.imageUrl?.trim();
+    final fb = _distinctFallbackUrl();
+    if (!_triedAlternateNetworkUrl &&
+        fb != null &&
+        primary != null &&
+        primary.isNotEmpty &&
+        _networkUrl == primary) {
+      _triedAlternateNetworkUrl = true;
+      setState(() => _networkUrl = fb);
+      return;
+    }
+    setState(() => _networkUrl = null);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final url = _activeUrl;
+    final url = _networkUrl?.trim();
     if (url == null || url.isEmpty) {
-      // If no URL is available at all, render nothing (no placeholder).
-      return SizedBox(width: widget.width, height: widget.height);
+      return SizedBox(
+        width: widget.width,
+        height: widget.height,
+        child: widget.fallback,
+      );
     }
 
     Widget image = Image.network(
@@ -98,8 +126,10 @@ class _ProductNetworkImageState extends State<ProductNetworkImage> {
         );
       },
       errorBuilder: (context, error, stackTrace) {
-        // If the request fails (commonly 404 on missing blobs), render nothing
-        // and do not attempt fallback URLs or placeholders.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _onImageLoadFailed();
+        });
         return SizedBox(width: widget.width, height: widget.height);
       },
     );

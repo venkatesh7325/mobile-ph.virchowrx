@@ -10,9 +10,15 @@ class EnquiryRepositoryImpl implements EnquiryRepository {
   const EnquiryRepositoryImpl({required this.remoteDataSource});
 
   @override
-  Future<Either<Failure, List<EnquiryEntity>>> getEnquiries({int page = 1, int limit = 20}) async {
+  Future<Either<Failure, List<EnquiryEntity>>> getEnquiries({
+    int page = 1,
+    int limit = 20,
+    String? search,
+  }) async {
     try {
-      return Right(await remoteDataSource.getEnquiries(page: page, limit: limit));
+      return Right(
+        await remoteDataSource.getEnquiries(page: page, limit: limit, search: search),
+      );
     } on NetworkException catch (e) {
       return Left(NetworkFailure(message: e.message));
     } on ServerException catch (e) {
@@ -43,6 +49,21 @@ class EnquiryRepositoryImpl implements EnquiryRepository {
       return Left(NetworkFailure(message: e.message));
     } on ValidationException catch (e) {
       return Left(ValidationFailure(message: e.message));
+    } catch (e) {
+      return Left(UnexpectedFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, EnquiryEntity>> acceptEnquiryReply(int enquiryId) async {
+    try {
+      return Right(await remoteDataSource.acceptEnquiryReply(enquiryId));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(message: e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
+    } on ParseException catch (e) {
+      return Left(UnexpectedFailure(message: e.message));
     } catch (e) {
       return Left(UnexpectedFailure(message: e.toString()));
     }

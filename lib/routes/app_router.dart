@@ -6,6 +6,7 @@ import 'package:ph_virchowrx/presentation/pages/products/product_gallery_screen.
 import 'package:ph_virchowrx/presentation/pages/products/product_info_screen.dart';
 import '../core/auth/auth_session.dart';
 import '../core/constants/app_routes.dart';
+import '../domain/entities/product_entity.dart';
 import '../dependency_injection.dart';
 import '../presentation/pages/cart/cart_page.dart';
 import '../presentation/pages/dashboard/dashboard_page.dart';
@@ -118,9 +119,14 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.productDetail, // Ensure this matches AppRoutes.productDetail
         builder: (context, state) {
-          // Retrieve the product passed via 'extra'
           final product = state.extra;
-          return ProductDetailScreen(product: product);
+          String? id;
+          if (product is ProductEntity) id = product.id;
+          id ??= state.pathParameters['id'];
+          return ProductDetailScreen(
+            key: ValueKey('product_detail_${id ?? 'unknown'}'),
+            product: product,
+          );
         },
       ),
       GoRoute(

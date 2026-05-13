@@ -13,6 +13,15 @@ class EnquiryEntity extends Equatable {
   final String? response;
   final String? productId;
   final String? productName;
+  /// Distributor display name from nested `distributor` on pharmacy enquiries API.
+  final String? distributorName;
+  final String? productSku;
+  /// Parsed `reply_price` when distributor replied.
+  final double? replyPrice;
+  final DateTime? replyAt;
+  final String? replyUserDisplay;
+  final bool replyAccepted;
+  final DateTime? replyAcceptedAt;
 
   const EnquiryEntity({
     required this.id,
@@ -24,8 +33,23 @@ class EnquiryEntity extends Equatable {
     this.response,
     this.productId,
     this.productName,
+    this.distributorName,
+    this.productSku,
+    this.replyPrice,
+    this.replyAt,
+    this.replyUserDisplay,
+    this.replyAccepted = false,
+    this.replyAcceptedAt,
   });
 
   @override
-  List<Object?> get props => [id, subject, status, type];
+  List<Object?> get props => [
+        id,
+        subject,
+        status,
+        type,
+        distributorName,
+        replyPrice,
+        replyAccepted,
+      ];
 }

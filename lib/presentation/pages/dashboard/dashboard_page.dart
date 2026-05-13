@@ -53,13 +53,12 @@ class DashboardPage extends StatelessWidget {
                 _buildQuickActions(context),
                 const SizedBox(height: 18),
                 _buildRecentOrders(controller, currency),
-                const SizedBox(height: 100),
+                const SizedBox(height: 28),
               ],
             ),
           ),
         );
       }),
-      floatingActionButton: _buildFab(),
     );
   }
 
@@ -424,31 +423,6 @@ class DashboardPage extends StatelessWidget {
               color: isUrgent ? AppColors.badgeUrgent : color,
               fontSize: 9,
               fontWeight: FontWeight.bold)),
-    );
-  }
-
-  Widget _buildFab() {
-    return Container(
-      width: 60,
-      height: 60,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.primaryTeal, AppColors.primaryTealDark],
-        ),
-        boxShadow: [
-          BoxShadow(
-              color: AppColors.primaryTeal.withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 6))
-        ],
-      ),
-      child: IconButton(
-        onPressed: () {},
-        icon: const Icon(Icons.headphones_outlined, color: Colors.white, size: 28),
-      ),
     );
   }
 }

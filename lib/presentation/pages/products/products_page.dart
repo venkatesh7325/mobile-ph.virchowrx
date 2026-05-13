@@ -32,7 +32,7 @@ class ProductsPage extends StatelessWidget {
           children: [
          //   _buildHeaderSection(controller),
             _buildSearchBar(controller),
-            _buildCategoryFilter(controller),
+          //  _buildCategoryFilter(controller),
             const SizedBox(height: 6),
             Expanded(
               child: Obx(() {
@@ -68,15 +68,6 @@ class ProductsPage extends StatelessWidget {
             ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        backgroundColor: primaryTeal,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30),
-          side: const BorderSide(color: Color(0xFF0F5A53), width: 3),
-        ),
-        child: const Icon(Icons.headset_mic_outlined, color: Colors.white),
       ),
     );
   }
@@ -164,7 +155,7 @@ class _ProductCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        context.push(AppRoutes.productDetail, extra: product);
+        context.push(AppRoutes.productDetailPath(product.id), extra: product);
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
@@ -178,7 +169,9 @@ class _ProductCard extends StatelessWidget {
         child: Column(
           children: [
             GestureDetector(
-              onTap: () => context.push(AppRoutes.productGallery, extra: product),
+              onTap: () {
+        context.push(AppRoutes.productDetailPath(product.id), extra: product);
+      },
               child: ProductNetworkImage(
                 imageUrl: catalogImageUrl ?? product.imageUrl,
                 fallbackImageUrl: catalogImageFallbackUrl,
@@ -248,12 +241,12 @@ class _ProductCard extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                 decoration: BoxDecoration(
-                  color: ProductsPage.primaryTeal,
+                  color: ProductsPage.primaryTeal.withOpacity(0.50),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
                       color: ProductsPage.primaryTeal.withOpacity(0.18),
-                      blurRadius: 16,
+                      blurRadius: 6,
                       offset: const Offset(0, 10),
                     ),
                   ],
