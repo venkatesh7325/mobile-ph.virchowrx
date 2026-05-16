@@ -3,6 +3,8 @@ class AppRoutes {
 
   static const String root = '/';
   static const String login = '/login';
+  static const String forgotPassword = '/forgot-password';
+  static const String forgotPasswordConfirm = '/forgot-password/confirm';
   static const String register = '/register';
   static const String dashboard = '/dashboard';
   static const String products = '/products';
@@ -21,6 +23,7 @@ class AppRoutes {
   static const String cart = '/cart';
   static const String checkout = '/checkout';
   static const String profile = '/profile';
+  static const String changePassword = '/change-password';
   static const String settings = '/settings';
   static const String productDetails = '/product-detail';
   static const String productInfo = '/product-info';

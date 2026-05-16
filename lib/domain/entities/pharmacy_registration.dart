@@ -23,6 +23,8 @@ class PharmacyRegistrationPayload {
     required this.panDocumentPath,
     required this.gstDocumentPath,
     required this.licenseDocumentPath,
+    this.pharmacyLatitude,
+    this.pharmacyLongitude,
   });
 
   final String pharmacyLicenseNumber;
@@ -46,27 +48,39 @@ class PharmacyRegistrationPayload {
   final String panDocumentPath;
   final String gstDocumentPath;
   final String licenseDocumentPath;
+  /// Pharmacy map coordinates (`pharmacy_latitude` / `pharmacy_longitude` in multipart).
+  final String? pharmacyLatitude;
+  final String? pharmacyLongitude;
 
-  Map<String, String> toFields() => {
-        'pharmacy_license_number': pharmacyLicenseNumber,
-        'pharmacy_name': pharmacyName,
-        'pharmacy_address': pharmacyAddress,
-        'pharmacy_city': pharmacyCity,
-        'pharmacy_state': pharmacyState,
-        'pharmacy_pincode': pharmacyPincode,
-        'pharmacy_phone': pharmacyPhone,
-        'pharmacy_email': pharmacyEmail,
-        'pharmacy_gst_number': pharmacyGstNumber,
-        'pharmacy_pan_number': pharmacyPanNumber,
-        'pharmacy_contact_person': pharmacyContactPerson,
-        'username': username,
-        'password': password,
-        'first_name': firstName,
-        'last_name': lastName,
-        'email': email,
-        'phone': phone,
-        'email_verification_code': emailVerificationCode,
-      };
+  Map<String, String> toFields() {
+    final fields = <String, String>{
+      'pharmacy_license_number': pharmacyLicenseNumber,
+      'pharmacy_name': pharmacyName,
+      'pharmacy_address': pharmacyAddress,
+      'pharmacy_city': pharmacyCity,
+      'pharmacy_state': pharmacyState,
+      'pharmacy_pincode': pharmacyPincode,
+      'pharmacy_phone': pharmacyPhone,
+      'pharmacy_email': pharmacyEmail,
+      'pharmacy_gst_number': pharmacyGstNumber,
+      'pharmacy_pan_number': pharmacyPanNumber,
+      'pharmacy_contact_person': pharmacyContactPerson,
+      'username': username,
+      'password': password,
+      'first_name': firstName,
+      'last_name': lastName,
+      'email': email,
+      'phone': phone,
+      'email_verification_code': emailVerificationCode,
+    };
+    final lat = pharmacyLatitude?.trim() ?? '';
+    final lng = pharmacyLongitude?.trim() ?? '';
+    if (lat.isNotEmpty && lng.isNotEmpty) {
+      fields['pharmacy_latitude'] = lat;
+      fields['pharmacy_longitude'] = lng;
+    }
+    return fields;
+  }
 }
 
 class UniqueFieldResult {

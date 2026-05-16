@@ -226,9 +226,20 @@ class SideMenu extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: Colors.white.withOpacity(0.05), width: 1)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          InkWell(
+            onTap: () => _navigate(context, AppRoutes.changePassword),
+            child: Row(
+              children: [
+                Icon(Icons.lock_outline, color: textMuted, size: 20),
+                const SizedBox(width: 8),
+                Text('Change Password', style: TextStyle(color: textMuted, fontSize: 14)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
           InkWell(
             onTap: () async {
               Navigator.of(context).pop();
@@ -236,6 +247,7 @@ class SideMenu extends StatelessWidget {
               await Get.find<LoginController>().logout();
             },
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Icon(Icons.logout, color: dangerCoral, size: 20),
                 const SizedBox(width: 8),

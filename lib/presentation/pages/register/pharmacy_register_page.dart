@@ -387,8 +387,17 @@ class _PharmacyRegisterPageState extends State<PharmacyRegisterPage> {
       return;
     }
 
-    if (_latitudeCtrl.text.trim().isEmpty || _longitudeCtrl.text.trim().isEmpty) {
-      AppSnackBar.showError(context, 'Please fetch location (Latitude & Longitude) before submitting');
+    final coordError = Validators.pharmacyCoordinates(
+      _latitudeCtrl.text,
+      _longitudeCtrl.text,
+    );
+    if (coordError != null) {
+      AppSnackBar.showError(context, coordError);
+      return;
+    }
+
+    if (_passwordCtrl.text != _confirmPasswordCtrl.text) {
+      AppSnackBar.showError(context, 'Passwords do not match');
       return;
     }
 
@@ -435,6 +444,8 @@ class _PharmacyRegisterPageState extends State<PharmacyRegisterPage> {
       panDocumentPath: _panPath!,
       gstDocumentPath: _gstPath!,
       licenseDocumentPath: _licensePath!,
+      pharmacyLatitude: _latitudeCtrl.text.trim(),
+      pharmacyLongitude: _longitudeCtrl.text.trim(),
     );
 
     final r = await _controller.register(payload);
@@ -661,7 +672,14 @@ class _PharmacyRegisterPageState extends State<PharmacyRegisterPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 10),
+                    child: Text(
+                      'Maps location — use Get location or enter latitude and longitude.',
+                      style: TextStyle(fontSize: 12, color: _kMuted, height: 1.35),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
                   Row(
                     children: [
                       Expanded(
@@ -669,9 +687,10 @@ class _PharmacyRegisterPageState extends State<PharmacyRegisterPage> {
                           controller: _latitudeCtrl,
                           label: 'Latitude *',
                           keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                          enabled: true,
-                          readOnly: false,
-                          validator: (v) => Validators.required(v, 'Latitude'),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(RegExp(r'^-?\d*\.?\d*')),
+                          ],
+                          validator: Validators.latitude,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -680,9 +699,10 @@ class _PharmacyRegisterPageState extends State<PharmacyRegisterPage> {
                           controller: _longitudeCtrl,
                           label: 'Longitude *',
                           keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                          enabled: true,
-                          readOnly: false,
-                          validator: (v) => Validators.required(v, 'Longitude'),
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(RegExp(r'^-?\d*\.?\d*')),
+                          ],
+                          validator: Validators.longitude,
                         ),
                       ),
                     ],

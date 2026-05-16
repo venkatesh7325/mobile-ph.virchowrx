@@ -12,9 +12,13 @@ import '../presentation/pages/cart/cart_page.dart';
 import '../presentation/pages/dashboard/dashboard_page.dart';
 import '../presentation/pages/distributor/distributor_page.dart';
 import '../presentation/pages/enquiry/enquiry_page.dart';
+import '../domain/entities/forgot_password_entity.dart';
+import '../presentation/pages/login/forgot_password_confirm_page.dart';
+import '../presentation/pages/login/forgot_password_request_page.dart';
 import '../presentation/pages/login/login_page.dart';
 import '../presentation/pages/register/pharmacy_register_page.dart';
 import '../presentation/pages/orders/orders_page.dart';
+import '../presentation/pages/profile/change_password_page.dart';
 import '../presentation/pages/products/product_details.dart';
 import '../presentation/pages/products/products_page.dart';
 
@@ -34,7 +38,10 @@ class AppRouter {
     try {
       final loggedIn = Get.find<AuthSession>().token.value.isNotEmpty;
       final loc = state.matchedLocation;
-      final onPublicAuth = loc == AppRoutes.login || loc == AppRoutes.register;
+      final onPublicAuth = loc == AppRoutes.login ||
+          loc == AppRoutes.register ||
+          loc == AppRoutes.forgotPassword ||
+          loc == AppRoutes.forgotPasswordConfirm;
 
       if (!loggedIn && !onPublicAuth) {
         return AppRoutes.login;
@@ -67,6 +74,20 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.login,
         builder: (context, state) => const LoginPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.forgotPassword,
+        builder: (context, state) => const ForgotPasswordRequestPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.forgotPasswordConfirm,
+        builder: (context, state) {
+          final extra = state.extra;
+          if (extra is! ForgotPasswordConfirmArgs) {
+            return const ForgotPasswordRequestPage();
+          }
+          return ForgotPasswordConfirmPage(args: extra);
+        },
       ),
       GoRoute(
         path: AppRoutes.register,
@@ -114,6 +135,10 @@ class AppRouter {
       GoRoute(
         path: AppRoutes.cart,
         builder: (context, state) => const CartScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.changePassword,
+        builder: (context, state) => const ChangePasswordPage(),
       ),
       // app_router.dart
       GoRoute(

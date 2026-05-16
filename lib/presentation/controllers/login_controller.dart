@@ -50,7 +50,7 @@ class LoginController extends GetxController {
 
     final result = await repository.login(
       username: username.trim(),
-      password: password,
+      password: password
     );
 
     isLoading.value = false;

@@ -2,12 +2,14 @@ import '../../core/auth/auth_session.dart';
 import '../../core/errors/exceptions.dart';
 import '../../core/network/api_client.dart';
 import '../models/auth_model.dart';
+import '../../domain/entities/forgot_password_entity.dart';
 import '../../domain/entities/pharmacy_registration.dart';
 
 abstract class AuthRemoteDataSource {
   Future<UserModel> login({
     required String username,
-    required String password,
+    required String password
+    
   });
 
   Future<bool> logout();
@@ -22,6 +24,19 @@ abstract class AuthRemoteDataSource {
   });
 
   Future<Map<String, dynamic>> registerPharmacy(PharmacyRegistrationPayload payload);
+
+  Future<ForgotPasswordRequestResult> requestForgotPassword(String username);
+
+  Future<String> confirmForgotPassword({
+    required String username,
+    required String code,
+    required String newPassword,
+  });
+
+  Future<String> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  });
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -40,7 +55,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }) async {
     final response = await apiClient.post(
       '/auth/login',
-      body: {'username': username, 'password': password},
+      body: {
+        'username': username,
+        'password': password,
+        'client_channel': 'mobile',
+      },
       useSessionToken: false,
     ) as Map<String, dynamic>;
 
@@ -100,5 +119,49 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       },
       useSessionToken: false,
     ) as Map<String, dynamic>;
+  }
+
+  @override
+  Future<ForgotPasswordRequestResult> requestForgotPassword(String username) async {
+    final response = await apiClient.post(
+      '/auth/forgot-password',
+      body: {'username': username.trim()},
+      useSessionToken: false,
+    ) as Map<String, dynamic>;
+    return ForgotPasswordRequestResult.fromJson(response);
+  }
+
+  @override
+  Future<String> confirmForgotPassword({
+    required String username,
+    required String code,
+    required String newPassword,
+  }) async {
+    final response = await apiClient.post(
+      '/auth/forgot-password/confirm',
+      body: {
+        'username': username.trim(),
+        'code': code.trim(),
+        'new_password': newPassword,
+      },
+      useSessionToken: false,
+    ) as Map<String, dynamic>;
+    return response['message']?.toString() ?? 'Password reset successfully';
+  }
+
+  @override
+  Future<String> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final response = await apiClient.put(
+      '/auth/change-password',
+      body: {
+        'current_password': currentPassword,
+        'new_password': newPassword,
+      },
+      useSessionToken: true,
+    ) as Map<String, dynamic>;
+    return response['message']?.toString() ?? 'Password updated successfully.';
   }
 }

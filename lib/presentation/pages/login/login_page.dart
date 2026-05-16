@@ -82,8 +82,7 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  void _handleForgotPassword() =>
-      AppSnackBar.showInfo(context, 'Password reset flow not yet implemented');
+  void _handleForgotPassword() => context.push(AppRoutes.forgotPassword);
 
   void _handleBiometric() =>
       AppSnackBar.showInfo(context, 'Biometric sign-in not yet implemented');

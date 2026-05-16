@@ -79,10 +79,62 @@ class Validators {
     return null;
   }
 
+  static String? latitude(String? value) {
+    final v = value?.trim() ?? '';
+    if (v.isEmpty) return 'Latitude is required';
+    final n = double.tryParse(v);
+    if (n == null) return 'Enter a valid latitude';
+    if (n < -90 || n > 90) return 'Latitude must be between -90 and 90';
+    return null;
+  }
+
+  static String? longitude(String? value) {
+    final v = value?.trim() ?? '';
+    if (v.isEmpty) return 'Longitude is required';
+    final n = double.tryParse(v);
+    if (n == null) return 'Enter a valid longitude';
+    if (n < -180 || n > 180) return 'Longitude must be between -180 and 180';
+    return null;
+  }
+
+  /// Both coordinates required together (registration / pharmacy location).
+  static String? pharmacyCoordinates(String? latitude, String? longitude) {
+    final latErr = Validators.latitude(latitude);
+    if (latErr != null) return latErr;
+    final lngErr = Validators.longitude(longitude);
+    if (lngErr != null) return lngErr;
+    return null;
+  }
+
   static String? confirmPassword(String? password, String? confirm) {
     final c = confirm ?? '';
     if (c.isEmpty) return 'Confirm password is required';
     if (password != c) return 'Passwords do not match';
+    return null;
+  }
+
+  /// Matches Pharmacy web change-password confirmation message.
+  static String? confirmNewPassword(String? newPassword, String? confirm) {
+    final c = confirm ?? '';
+    if (c.isEmpty) return 'Confirm new password is required';
+    if (newPassword != c) return 'New password and confirmation do not match.';
+    return null;
+  }
+
+  static String? currentPassword(String? value) {
+    final v = value ?? '';
+    if (v.isEmpty) return 'Current password is required';
+    return null;
+  }
+
+  static String? verificationCode(String? value) {
+    final v = value?.trim() ?? '';
+    if (v.isEmpty) return 'Verification code is required';
+    if (v.length < 4) return 'Enter the code from your pharmacy email';
+    if (v.length > 8) return 'Code is too long';
+    if (!RegExp(r'^[a-zA-Z0-9]+$').hasMatch(v)) {
+      return 'Code must contain only letters and numbers';
+    }
     return null;
   }
 }
