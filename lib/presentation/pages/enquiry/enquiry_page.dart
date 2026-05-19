@@ -1107,7 +1107,7 @@ class _ProductSearchSheetState extends State<_ProductSearchSheet> {
                 autofocus: true,
                 onChanged: (v) => setState(() => _query = v),
                 decoration: InputDecoration(
-                  hintText: 'Type name or SKU…',
+                  hintText: 'Type product name…',
                   prefixIcon: const Icon(Icons.search),
                   filled: true,
                   fillColor: const Color(0xFFF3F4F6),

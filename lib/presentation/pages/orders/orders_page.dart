@@ -611,7 +611,7 @@ class _OrderItemsList extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 6),
-              _kvRow('SKU', '${item.sku}'),
+              _kvRow('Code', '${item.sku}'),
               const SizedBox(height: 4),
               _kvRow('Quantity', '${item.quantity}'),
               const SizedBox(height: 4),

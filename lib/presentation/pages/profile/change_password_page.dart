@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../core/constants/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/validators.dart';
 import '../../../domain/repositories/auth_repository.dart';
 import '../../widgets/app_scaffold.dart';
@@ -96,17 +95,12 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             children: [
               Text(
                 'Change password',
-                style: GoogleFonts.montserrat(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textDark,
-                ),
+                style: AppTypography.headlineMedium.copyWith(color: AppColors.textDark),
               ),
               const SizedBox(height: 8),
               Text(
                 'Enter your current password and a new password for your pharmacy portal account.',
-                style: GoogleFonts.montserrat(
-                  fontSize: 14,
+                style: AppTypography.bodyMedium.copyWith(
                   height: 1.45,
                   color: AppColors.textLight,
                 ),
@@ -192,10 +186,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                                 )
                               : Text(
                                   'Update password',
-                                  style: GoogleFonts.montserrat(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: AppTypography.titleMedium,
                                 ),
                         ),
                       ),

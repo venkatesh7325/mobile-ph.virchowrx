@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_routes.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../domain/entities/order_entity.dart';
 import '../../controllers/dashboard_controller.dart';
@@ -76,9 +76,8 @@ class DashboardPage extends StatelessWidget {
           children: [
             Text(
               'Welcome back, $name ($code)',
-              style: GoogleFonts.playfairDisplay(
+              style: AppTypography.headlineMedium.copyWith(
                 fontSize: 26,
-                fontWeight: FontWeight.w600,
                 color: AppColors.textDark,
               ),
             ),
@@ -113,10 +112,9 @@ class DashboardPage extends StatelessWidget {
             child: Center(
               child: Text(
                 initials.toUpperCase(),
-                style: GoogleFonts.montserrat(
+                style: AppTypography.titleMedium.copyWith(
                   color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -184,7 +182,7 @@ class DashboardPage extends StatelessWidget {
             ),
             child: Text(
               'No recent orders yet',
-              style: GoogleFonts.montserrat(fontSize: 12, color: AppColors.textLight),
+              style: AppTypography.bodySmall.copyWith(color: AppColors.textLight),
             ),
           )
         else
@@ -219,8 +217,7 @@ class DashboardPage extends StatelessWidget {
                   'Order #${order.orderNumber}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.montserrat(
-                    fontSize: 12,
+                  style: AppTypography.bodySmall.copyWith(
                     fontWeight: FontWeight.w600,
                     color: AppColors.textDark,
                   ),
@@ -228,7 +225,7 @@ class DashboardPage extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   '${currency.format(order.total)} · $date',
-                  style: GoogleFonts.montserrat(fontSize: 11, color: AppColors.textLight),
+                  style: AppTypography.caption.copyWith(fontSize: 11, color: AppColors.textLight),
                 ),
               ],
             ),
@@ -250,7 +247,7 @@ class DashboardPage extends StatelessWidget {
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
       child: Text(
         label,
-        style: GoogleFonts.montserrat(fontSize: 10, fontWeight: FontWeight.w700, color: fg),
+        style: AppTypography.labelSmall.copyWith(fontWeight: FontWeight.w700, color: fg),
       ),
     );
   }
@@ -261,9 +258,7 @@ class DashboardPage extends StatelessWidget {
         Expanded(
           child: Text(
             title.toUpperCase(),
-            style: GoogleFonts.montserrat(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
+            style: AppTypography.labelMedium.copyWith(
               letterSpacing: 1.2,
               color: AppColors.textLight,
             ),
@@ -303,8 +298,7 @@ class DashboardPage extends StatelessWidget {
             Icon(icon, color: Colors.white, size: 22),
             Text(
               label,
-              style: GoogleFonts.montserrat(
-                fontSize: 11,
+              style: AppTypography.labelSmall.copyWith(
                 height: 1.15,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
@@ -388,14 +382,12 @@ class DashboardPage extends StatelessWidget {
               const Spacer(),
               Text(
                 value,
-                style: GoogleFonts.playfairDisplay(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textDark),
+                style: AppTypography.productPrice(
+                    fontSize: 32, color: AppColors.textDark),
               ),
               Text(
                 title,
-                style: GoogleFonts.montserrat(
+                style: AppTypography.caption.copyWith(
                     fontSize: 11, color: AppColors.textLight),
               ),
             ],
@@ -419,10 +411,10 @@ class DashboardPage extends StatelessWidget {
           color: isUrgent ? AppColors.badgeUrgentBg : color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12)),
       child: Text(text,
-          style: GoogleFonts.montserrat(
+          style: AppTypography.labelSmall.copyWith(
               color: isUrgent ? AppColors.badgeUrgent : color,
               fontSize: 9,
-              fontWeight: FontWeight.bold)),
+              fontWeight: FontWeight.w700)),
     );
   }
 }

@@ -80,7 +80,13 @@ class CartScreen extends StatelessWidget {
                     ),
                   ),
                   TextButton(
-                    onPressed: () => context.pop(),
+                    onPressed: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go(AppRoutes.products);
+                      }
+                    },
                     child: const Text('Browse catalog', style: TextStyle(color: primaryBlue, fontWeight: FontWeight.w600)),
                   ),
                 ],

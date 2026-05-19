@@ -5,11 +5,13 @@ import 'package:intl/intl.dart';
 import 'dart:async';
 
 import '../../../core/constants/app_routes.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/network/api_client.dart';
 import '../../../domain/entities/product_entity.dart';
 import '../../../domain/repositories/product_repository.dart';
 import '../../controllers/cart_controller.dart';
 import '../../widgets/app_states.dart';
+import '../../widgets/product_image_viewer.dart';
 import '../../widgets/product_network_image.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -260,8 +262,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       elevation: 0,
       leading: _buildSquareButton(Icons.chevron_left, () => context.pop()),
       centerTitle: true,
-      title: const Text('Product',
-          style: TextStyle(color: ProductDetailScreen.darkText, fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'serif')),
+      title: Text('Product',
+          style: AppTypography.titleLarge.copyWith(color: ProductDetailScreen.darkText)),
       actions: [
         Padding(
           padding: const EdgeInsets.only(right: 10),
@@ -335,20 +337,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             top: -40, right: -40,
             child: CircleAvatar(radius: 100, backgroundColor: Colors.white.withOpacity(0.1)),
           ),
-          Positioned(
-            top: 24, left: 24,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF9E8B1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                p != null && p.code.isNotEmpty ? 'SKU ${p.code}' : 'SKU',
-                style: const TextStyle(color: Color(0xFF8B4513), fontWeight: FontWeight.bold, fontSize: 10),
+          if (p != null && p.code.isNotEmpty)
+            Positioned(
+              top: 24, left: 24,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF9E8B1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  p.code,
+                  style: const TextStyle(color: Color(0xFF8B4513), fontWeight: FontWeight.bold, fontSize: 10),
+                ),
               ),
             ),
-          ),
           Positioned(
             top: 24, right: 24,
             child: Container(
@@ -372,11 +375,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 Text(
                   p?.name ?? 'Product',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'serif',
+                  style: AppTypography.productTitle(
                     fontSize: urls.isEmpty ? 36 : 28,
                     color: const Color(0xFF432818),
-                    fontWeight: FontWeight.bold,
                   ),
                 ),
                 const Text('By Virchow Pharmaceuticals', style: TextStyle(color: Color(0xFF8B4513), fontSize: 14)),
@@ -407,7 +408,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Text('Diclofenac Sodium', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                Text(brandLine, style: const TextStyle(fontFamily: 'serif', fontSize: 28, color: Color(0xFFB91C1C), fontWeight: FontWeight.bold)),
+                Text(brandLine, style: AppTypography.productTitle(fontSize: 28, color: const Color(0xFFB91C1C))),
                 const Text('PFS 75mg/mL', style: TextStyle(fontSize: 8, color: Colors.grey)),
               ],
             ),
@@ -445,7 +446,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(whole, style: const TextStyle(fontFamily: 'serif', fontSize: 42, fontWeight: FontWeight.bold, color: ProductDetailScreen.darkText)),
+            Text(whole, style: AppTypography.productPrice(color: ProductDetailScreen.darkText)),
             const Spacer(),
             const Text('CityMed', style: TextStyle(color: Colors.grey, fontSize: 12)),
           ],
@@ -1098,15 +1099,23 @@ class _ProductDetailImageCarouselState extends State<_ProductDetailImageCarousel
               final fb = _carouselFallbackUrl(widget.urls, i);
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: ProductNetworkImage(
-                  imageUrl: primary,
-                  fallbackImageUrl: fb,
-                  width: widget.width,
-                  height: _imageHeight,
-                  fit: BoxFit.contain,
-                  borderRadius: BorderRadius.circular(12),
-                  fallback: Center(
-                    child: Icon(Icons.medication, size: 72, color: Colors.brown.withOpacity(0.35)),
+                child: GestureDetector(
+                  onTap: () => ProductImageViewer.open(
+                    context,
+                    urls: widget.urls,
+                    initialIndex: i,
+                    fallbackForIndex: (idx) => _carouselFallbackUrl(widget.urls, idx),
+                  ),
+                  child: ProductNetworkImage(
+                    imageUrl: primary,
+                    fallbackImageUrl: fb,
+                    width: widget.width,
+                    height: _imageHeight,
+                    fit: BoxFit.contain,
+                    borderRadius: BorderRadius.circular(12),
+                    fallback: Center(
+                      child: Icon(Icons.medication, size: 72, color: Colors.brown.withOpacity(0.35)),
+                    ),
                   ),
                 ),
               );

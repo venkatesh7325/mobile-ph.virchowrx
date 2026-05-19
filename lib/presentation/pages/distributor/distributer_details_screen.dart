@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../widgets/top_nav_cart_button.dart';
+
 class DistributorDetailScreen extends StatefulWidget {
   const DistributorDetailScreen({super.key});
 
@@ -106,39 +108,7 @@ class _DistributorDetailScreenState extends State<DistributorDetailScreen> {
           'Distributor',
           style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
         ),
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE2F0EB),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.shopping_cart_outlined, size: 18, color: Color(0xFF1D9E75)),
-            ),
-            Positioned(
-              top: -4,
-              right: -4,
-              child: Container(
-                width: 18,
-                height: 18,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE74C3C),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFF4FAF7), width: 2),
-                ),
-                child: const Center(
-                  child: Text(
-                    '10',
-                    style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+        const TopNavCartButton(),
       ],
     );
   }
@@ -380,7 +350,7 @@ class _DistributorDetailScreenState extends State<DistributorDetailScreen> {
         GestureDetector(
           onTap: () {},
           child: const Text(
-            '324 SKUs →',
+            '324 products →',
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1D9E75)),
           ),
         ),

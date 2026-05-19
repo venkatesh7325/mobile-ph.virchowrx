@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import 'distributer_details_screen.dart';
 import '../../controllers/distributor_controller.dart';
+import '../../widgets/top_nav_cart_button.dart';
 import '../../../domain/entities/distributor_entity.dart';
 class DistributorsListScreen extends StatefulWidget {
   const DistributorsListScreen({super.key});
@@ -150,15 +151,10 @@ class _DistributorsListScreenState extends State<DistributorsListScreen> {
                         ),
                       ),
                     ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                  const SliverToBoxAdapter(child: SizedBox(height: 32)),
                 ],
               );
             }),
-            Positioned(
-              bottom: 28,
-              right: 20,
-              child: _buildFAB(),
-            ),
           ],
         ),
       ),
@@ -181,7 +177,7 @@ class _DistributorsListScreenState extends State<DistributorsListScreen> {
             color: Color(0xFF1A1A1A),
           ),
         ),
-        _cartBtn(),
+        const TopNavCartButton(),
       ],
     );
   }
@@ -198,39 +194,6 @@ class _DistributorsListScreenState extends State<DistributorsListScreen> {
         ),
         child: child,
       ),
-    );
-  }
-
-  Widget _cartBtn() {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: const Color(0xFFE2F0EB),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: const Icon(Icons.shopping_cart_outlined, size: 18, color: Color(0xFF1D9E75)),
-        ),
-        Positioned(
-          top: -4,
-          right: -4,
-          child: Container(
-            width: 18,
-            height: 18,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE74C3C),
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFF4FAF7), width: 2),
-            ),
-            child: const Center(
-              child: Text('10', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700)),
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -528,19 +491,6 @@ class _DistributorsListScreenState extends State<DistributorsListScreen> {
 
   Widget _closedBadge() {
     return const Text('Closed', style: TextStyle(fontSize: 11, color: Color(0xFF999999), fontWeight: FontWeight.w500));
-  }
-
-  Widget _buildFAB() {
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F6E56),
-        shape: BoxShape.circle,
-        boxShadow: [BoxShadow(color: const Color(0xFF0F6E56).withOpacity(0.45), blurRadius: 16, offset: const Offset(0, 4))],
-      ),
-      child: const Icon(Icons.location_on, color: Colors.white, size: 22),
-    );
   }
 
   String _initials(String name) {

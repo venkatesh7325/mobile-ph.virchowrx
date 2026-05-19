@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:badges/badges.dart' as badges;
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_routes.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_typography.dart';
 import '../controllers/cart_controller.dart';
 import 'side_menu.dart';
 
@@ -34,10 +34,7 @@ class AppScaffold extends StatelessWidget {
         title:  Center(
           child: Text(
             title,
-            style: GoogleFonts.montserrat(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primaryTeal),
+            style: AppTypography.titleLarge.copyWith(color: AppColors.primaryTeal),
           ),
         ),
         iconTheme: const IconThemeData(color: AppColors.primaryTeal),
@@ -57,7 +54,10 @@ class AppScaffold extends StatelessWidget {
     return GetBuilder<CartController>(
       init: Get.isRegistered<CartController>() ? null : CartController(),
       builder: (controller) => Obx(() {
-        final count = controller.itemCount;
+        final count = controller.items.fold<int>(
+          0,
+          (sum, item) => sum + item.quantity.value,
+        );
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: IconButton(

@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../core/constants/app_routes.dart';
 import '../../core/constants/app_strings.dart';
+import '../../core/theme/app_typography.dart';
 import '../../dependency_injection.dart';
 import '../controllers/login_controller.dart';
 
@@ -192,12 +193,7 @@ class SideMenu extends StatelessWidget {
               children: [
                 Text(
                   name,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'serif',
-                  ),
+                  style: AppTypography.titleMedium.copyWith(color: Colors.white),
                 ),
                 const SizedBox(height: 4),
                 Text(

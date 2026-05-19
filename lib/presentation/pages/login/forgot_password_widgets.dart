@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../core/theme/app_typography.dart';
+
 const forgotBgDarkest = Color(0xFF052420);
 const forgotBgDeep = Color(0xFF0A3A35);
 const forgotBgMid = Color(0xFF12695F);
@@ -83,9 +85,9 @@ class ForgotPasswordCard extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: AppTypography.headlineMedium.copyWith(
               fontSize: 22,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
               color: forgotInk,
               letterSpacing: -0.2,
             ),
@@ -94,11 +96,7 @@ class ForgotPasswordCard extends StatelessWidget {
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 14,
-              height: 1.45,
-              color: forgotMuted,
-            ),
+            style: AppTypography.bodyMedium.copyWith(height: 1.45, color: forgotMuted),
           ),
           const SizedBox(height: 22),
           ...children,
@@ -140,13 +138,13 @@ class ForgotInfoBanner extends StatelessWidget {
               children: [
                 Text(
                   message,
-                  style: const TextStyle(fontSize: 13.5, height: 1.4, color: forgotInk),
+                  style: AppTypography.bodyMedium.copyWith(fontSize: 13.5, height: 1.4, color: forgotInk),
                 ),
                 if (maskedEmail != null && maskedEmail!.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Text.rich(
                     TextSpan(
-                      style: const TextStyle(fontSize: 13, height: 1.35, color: forgotInk),
+                      style: AppTypography.bodyMedium.copyWith(fontSize: 13, height: 1.35, color: forgotInk),
                       children: [
                         const TextSpan(text: 'Pharmacy email (masked): '),
                         TextSpan(
@@ -161,7 +159,7 @@ class ForgotInfoBanner extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text.rich(
                     TextSpan(
-                      style: const TextStyle(fontSize: 13, height: 1.35, color: forgotInk),
+                      style: AppTypography.bodyMedium.copyWith(fontSize: 13, height: 1.35, color: forgotInk),
                       children: [
                         const TextSpan(text: 'Development: code is '),
                         TextSpan(
@@ -207,7 +205,7 @@ class ForgotTextField extends StatelessWidget {
       keyboardType: keyboardType,
       validator: validator,
       maxLength: maxLength,
-      style: const TextStyle(fontSize: 15, color: forgotInk),
+      style: AppTypography.bodyLarge.copyWith(fontSize: 15, color: forgotInk),
       decoration: InputDecoration(
         labelText: label,
         counterText: '',
@@ -271,7 +269,7 @@ class ForgotPrimaryButton extends StatelessWidget {
               )
             : Text(
                 label,
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                style: AppTypography.button.copyWith(fontSize: 15),
               ),
       ),
     );
@@ -295,7 +293,7 @@ class ForgotTextLink extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          style: AppTypography.titleSmall.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -324,7 +322,7 @@ class ForgotErrorBanner extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(fontSize: 13.5, color: forgotDanger, height: 1.35),
+              style: AppTypography.bodyMedium.copyWith(fontSize: 13.5, color: forgotDanger, height: 1.35),
             ),
           ),
         ],

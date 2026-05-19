@@ -9,6 +9,7 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_routes.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/validators.dart';
 import '../../../domain/entities/pharmacy_registration.dart';
 import '../../controllers/register_controller.dart';
@@ -328,7 +329,7 @@ class _PharmacyRegisterPageState extends State<PharmacyRegisterPage> {
       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _kBorder)),
       focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _kTitle, width: 1.4)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      labelStyle: const TextStyle(color: _kMuted, fontWeight: FontWeight.w500),
+      labelStyle: AppTypography.bodyMedium.copyWith(color: _kMuted, fontWeight: FontWeight.w500),
     );
   }
 
@@ -337,7 +338,7 @@ class _PharmacyRegisterPageState extends State<PharmacyRegisterPage> {
     if (m == null || m.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(top: 4, left: 4),
-      child: Text(m, style: const TextStyle(color: Colors.red, fontSize: 12)),
+      child: Text(m, style: AppTypography.caption.copyWith(color: Colors.red)),
     );
   }
 
@@ -369,6 +370,7 @@ class _PharmacyRegisterPageState extends State<PharmacyRegisterPage> {
           onEditingComplete: formKeyUnique != null
               ? () => _blurUnique(formKeyUnique, controller.text)
               : null,
+          style: AppTypography.bodyLarge.copyWith(color: _kTitle),
           decoration: _decoration(label, helper: helper),
           validator: validator,
         ),
@@ -574,7 +576,7 @@ class _PharmacyRegisterPageState extends State<PharmacyRegisterPage> {
       padding: const EdgeInsets.only(bottom: 12, top: 8),
       child: Text(
         text,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _kTitle),
+        style: AppTypography.titleMedium.copyWith(color: _kTitle, fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -618,14 +620,14 @@ class _PharmacyRegisterPageState extends State<PharmacyRegisterPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
+                  Text(
                     'Pharmacy Registration',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: _kTitle),
+                    style: AppTypography.headlineMedium.copyWith(color: _kTitle),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
+                  Text(
                     'Register Your Pharmacy Account',
-                    style: TextStyle(color: _kMuted, fontSize: 14),
+                    style: AppTypography.bodyMedium.copyWith(color: _kMuted),
                   ),
                   const SizedBox(height: 20),
                   _sectionTitle('Pharmacy Information'),

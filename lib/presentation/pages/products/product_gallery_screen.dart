@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/product_entity.dart';
 import '../../../domain/repositories/product_repository.dart';
 import '../../widgets/product_network_image.dart';
@@ -103,8 +104,8 @@ class _ProductGalleryScreenState extends State<ProductGalleryScreen> {
       elevation: 0,
       leading: _buildSquareButton(Icons.chevron_left, () => context.pop()),
       centerTitle: true,
-      title: const Text('Gallery',
-          style: TextStyle(color: ProductGalleryScreen.darkText, fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'serif')),
+      title: Text('Gallery',
+          style: AppTypography.titleLarge.copyWith(color: ProductGalleryScreen.darkText)),
       actions: [
         Padding(
           padding: const EdgeInsets.only(right: 20),
@@ -157,7 +158,7 @@ class _ProductGalleryScreenState extends State<ProductGalleryScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text('PRODUCT IMAGES', style: TextStyle(color: ProductGalleryScreen.primaryTeal, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
-              Text(title, style: const TextStyle(fontFamily: 'serif', fontSize: 24, fontWeight: FontWeight.bold, color: ProductGalleryScreen.darkText)),
+              Text(title, style: AppTypography.headlineMedium.copyWith(color: ProductGalleryScreen.darkText)),
             ],
           ),
           _buildAutoToggle(),
@@ -351,9 +352,9 @@ class _ProductGalleryScreenState extends State<ProductGalleryScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: Text(name, style: const TextStyle(fontFamily: 'serif', fontSize: 20, fontWeight: FontWeight.bold, color: ProductGalleryScreen.darkText)),
+                child: Text(name, style: AppTypography.productTitle(fontSize: 20, color: ProductGalleryScreen.darkText)),
               ),
-              Text(priceLine, style: const TextStyle(fontFamily: 'serif', fontSize: 20, fontWeight: FontWeight.bold, color: ProductGalleryScreen.darkText)),
+              Text(priceLine, style: AppTypography.productTitle(fontSize: 20, color: ProductGalleryScreen.darkText)),
             ],
           ),
           const SizedBox(height: 12),

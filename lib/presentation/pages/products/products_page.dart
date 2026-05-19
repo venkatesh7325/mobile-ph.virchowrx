@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_routes.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../domain/entities/product_entity.dart';
 import '../../controllers/cart_controller.dart';
 import '../../widgets/product_network_image.dart';
@@ -84,7 +85,7 @@ class ProductsPage extends StatelessWidget {
         child: TextField(
           onChanged: controller.setSearchQuery,
           decoration: InputDecoration(
-            hintText: 'Search products or SKU...',
+            hintText: 'Search products...',
             hintStyle: TextStyle(color: Colors.grey.shade400),
             prefixIcon: Icon(Icons.search, color: Colors.grey.shade400),
             suffixIcon: const Icon(Icons.search, color: primaryTeal),
@@ -200,7 +201,7 @@ class _ProductCard extends StatelessWidget {
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700, fontFamily: 'serif'),
+                style: AppTypography.titleLarge.copyWith(color: Colors.white),
               ),
             ),
             const SizedBox(height: 12),
@@ -219,7 +220,7 @@ class _ProductCard extends StatelessWidget {
                 Expanded(
                   child: RichText(
                     text: TextSpan(
-                      style: const TextStyle(fontSize: 16, fontFamily: 'serif'),
+                      style: AppTypography.titleMedium,
                       children: [
                         const TextSpan(
                           text: 'Dealer Price: ',

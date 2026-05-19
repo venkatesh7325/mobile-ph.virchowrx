@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_typography.dart';
+
 class ProductInfoScreen extends StatelessWidget {
   final dynamic product;
   const ProductInfoScreen({super.key, this.product});
@@ -66,8 +68,8 @@ class ProductInfoScreen extends StatelessWidget {
       elevation: 0,
       leading: _buildSquareButton(Icons.chevron_left, () => context.pop()),
       centerTitle: true,
-      title: const Text('Product info',
-          style: TextStyle(color: darkText, fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'serif')),
+      title: Text('Product info',
+          style: AppTypography.titleLarge.copyWith(color: darkText)),
       actions: [
         Padding(
           padding: const EdgeInsets.only(right: 20),
@@ -133,13 +135,13 @@ class ProductInfoScreen extends StatelessWidget {
                   const Text('DICLOFENAC SODIUM', style: TextStyle(color: primaryTeal, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1)),
                 ],
               ),
-              const Text('Jusgo', style: TextStyle(fontFamily: 'serif', fontSize: 32, fontWeight: FontWeight.bold, color: darkText)),
+              Text('Jusgo', style: AppTypography.productTitle(fontSize: 32, color: darkText)),
               const SizedBox(height: 4),
               Row(
                 children: [
                   _buildBadge(Icons.circle, 'In stock', Colors.green, const Color(0xFFDCFCE7)),
                   const SizedBox(width: 8),
-                  const Text('SKU 52', style: TextStyle(color: mutedText, fontSize: 12)),
+                  const Text('52', style: TextStyle(color: mutedText, fontSize: 12)),
                 ],
               )
             ],

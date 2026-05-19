@@ -4,6 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'core/constants/app_strings.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/app_typography.dart';
 import 'dependency_injection.dart';
 import 'routes/app_router.dart';
 
@@ -43,7 +44,10 @@ class MyApp extends StatelessWidget {
               maxScaleFactor: 1.2,
             ),
           ),
-          child: child ?? const SizedBox.shrink(),
+          child: DefaultTextStyle(
+            style: AppTypography.bodyLarge,
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
       },
     );

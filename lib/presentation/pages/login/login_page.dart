@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_routes.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/validators.dart';
 import '../../../dependency_injection.dart';
 import '../../controllers/login_controller.dart';
@@ -411,12 +412,10 @@ class _LoginCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
+                    Text(
                       'Sign in',
-                      style: TextStyle(
-                        fontFamily: 'serif',
+                      style: AppTypography.headlineMedium.copyWith(
                         fontSize: 28,
-                        fontWeight: FontWeight.w600,
                         color: _ink,
                         letterSpacing: -0.5,
                       ),
@@ -566,11 +565,7 @@ class _FieldLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: const TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: _ink,
-      ),
+      style: AppTypography.titleSmall.copyWith(color: _ink, fontWeight: FontWeight.w600),
     );
   }
 }
@@ -594,8 +589,7 @@ class _InlineError extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(
-                fontSize: 13,
+              style: AppTypography.bodySmall.copyWith(
                 color: _danger,
                 fontWeight: FontWeight.w500,
               ),
@@ -636,11 +630,11 @@ class _AppTextField extends StatelessWidget {
       textInputAction: textInputAction,
       onFieldSubmitted: onSubmitted,
       validator: validator,
-      style: const TextStyle(fontSize: 15, color: _ink),
+      style: AppTypography.bodyLarge.copyWith(fontSize: 15, color: _ink),
       cursorColor: _teal,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: _hint, fontSize: 15),
+        hintStyle: AppTypography.bodyLarge.copyWith(color: _hint, fontSize: 15),
         prefixIcon: Padding(
           padding: const EdgeInsets.only(left: 16, right: 10),
           child: Icon(prefixIcon, color: _muted, size: 20),
@@ -658,9 +652,8 @@ class _AppTextField extends StatelessWidget {
         focusedBorder: _border(_teal.withOpacity(0.6), width: 1.2),
         errorBorder: _border(_danger),
         focusedErrorBorder: _border(_danger, width: 1.2),
-        errorStyle: const TextStyle(
+        errorStyle: AppTypography.caption.copyWith(
           color: _danger,
-          fontSize: 12,
           fontWeight: FontWeight.w500,
         ),
       ),

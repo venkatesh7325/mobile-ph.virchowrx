@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 import 'app_colors.dart';
 import 'app_typography.dart';
 
@@ -6,7 +8,7 @@ class AppTheme {
   AppTheme._();
 
   static ThemeData get lightTheme {
-    return ThemeData(
+    final base = ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
       colorScheme: const ColorScheme.light(
@@ -19,33 +21,22 @@ class AppTheme {
         surface: AppColors.surface,
       ),
       scaffoldBackgroundColor: AppColors.background,
-      fontFamily: AppTypography.fontFamily,
-      textTheme: const TextTheme(
-        displayLarge: AppTypography.displayLarge,
-        displayMedium: AppTypography.displayMedium,
-        headlineLarge: AppTypography.headlineLarge,
-        headlineMedium: AppTypography.headlineMedium,
-        headlineSmall: AppTypography.headlineSmall,
-        titleLarge: AppTypography.titleLarge,
-        titleMedium: AppTypography.titleMedium,
-        titleSmall: AppTypography.titleSmall,
-        bodyLarge: AppTypography.bodyLarge,
-        bodyMedium: AppTypography.bodyMedium,
-        bodySmall: AppTypography.bodySmall,
-        labelLarge: AppTypography.labelLarge,
-        labelMedium: AppTypography.labelMedium,
-        labelSmall: AppTypography.labelSmall,
-      ),
-      appBarTheme: const AppBarTheme(
+    );
+
+    final textTheme = GoogleFonts.montserratTextTheme(AppTypography.textTheme);
+
+    return base.copyWith(
+      textTheme: textTheme,
+      primaryTextTheme: textTheme,
+      scaffoldBackgroundColor: AppColors.background,
+      appBarTheme: AppBarTheme(
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.textOnPrimary,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: TextStyle(
-          fontFamily: AppTypography.fontFamily,
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
+        titleTextStyle: AppTypography.titleLarge.copyWith(
           color: AppColors.textOnPrimary,
+          fontSize: 20,
         ),
       ),
       cardTheme: CardThemeData(
@@ -61,9 +52,6 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: AppColors.textOnPrimary,
-          // Do not use infinite width here: Row (and similar) gives unbounded
-          // horizontal constraints; use SizedBox(width: double.infinity) where
-          // a full-width button is required.
           minimumSize: const Size(64, 52),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
