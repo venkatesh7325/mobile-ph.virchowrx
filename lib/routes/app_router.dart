@@ -6,6 +6,7 @@ import 'package:ph_virchowrx/presentation/pages/products/product_gallery_screen.
 import 'package:ph_virchowrx/presentation/pages/products/product_info_screen.dart';
 import '../core/auth/auth_session.dart';
 import '../core/constants/app_routes.dart';
+import '../domain/entities/order_entity.dart';
 import '../domain/entities/product_entity.dart';
 import '../dependency_injection.dart';
 import '../presentation/pages/cart/cart_page.dart';
@@ -122,7 +123,8 @@ class AppRouter {
         path: AppRoutes.orders,
         builder: (context, state) {
           DependencyInjection.bindOrders();
-          return const MyOrdersScreen();
+          final initialStatus = orderStatusFromQuery(state.uri.queryParameters['status']);
+          return MyOrdersScreen(initialStatusFilter: initialStatus);
         },
       ),
       GoRoute(

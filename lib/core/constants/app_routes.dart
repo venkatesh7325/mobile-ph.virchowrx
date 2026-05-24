@@ -16,6 +16,9 @@ class AppRoutes {
       '/products/${Uri.encodeComponent(productId.trim())}';
   static const String findDistributor = '/find-distributor';
   static const String orders = '/orders';
+
+  static String ordersWithStatus(String status) =>
+      '$orders?status=${Uri.encodeQueryComponent(status.trim())}';
   static const String orderDetail = '/orders/:id';
   static const String enquiry = '/enquiry';
   static const String enquiryDetail = '/enquiry/:id';

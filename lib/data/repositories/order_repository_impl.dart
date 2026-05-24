@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import '../../core/errors/exceptions.dart';
 import '../../core/errors/failures.dart';
+import '../../domain/entities/delivery_tracking_entity.dart';
 import '../../domain/entities/order_entity.dart';
 import '../../domain/repositories/order_repository.dart';
 import '../datasources/order_remote_datasource.dart';
@@ -30,6 +31,24 @@ class OrderRepositoryImpl implements OrderRepository {
       return Left(NetworkFailure(message: e.message));
     } on NotFoundException catch (e) {
       return Left(NotFoundFailure(message: e.message));
+    } catch (e) {
+      return Left(UnexpectedFailure(message: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, DeliveryTrackingEntity>> getDeliveryTracking(String id) async {
+    try {
+      return Right(await remoteDataSource.getDeliveryTracking(id));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(message: e.message));
+    } on NotFoundException {
+      return const Left(NotFoundFailure(
+        message:
+            'Delivery partner not assigned yet. Your distributor will assign a driver when the order is ready.',
+      ));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(message: e.message, statusCode: e.statusCode));
     } catch (e) {
       return Left(UnexpectedFailure(message: e.toString()));
     }

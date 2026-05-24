@@ -49,9 +49,9 @@ class DashboardPage extends StatelessWidget {
                 _buildWelcomeSection(loginController),
                 const SizedBox(height: 18),
                 _buildStatusGrid(context, controller, currency),
-                const SizedBox(height: 22),
-                _buildQuickActions(context),
-                const SizedBox(height: 18),
+                // const SizedBox(height: 22),
+                // _buildQuickActions(context),
+               // const SizedBox(height: 18),
                 _buildRecentOrders(controller, currency),
                 const SizedBox(height: 28),
               ],
@@ -331,6 +331,7 @@ class DashboardPage extends StatelessWidget {
           'Total Orders',
           null,
           AppColors.primaryTeal,
+          onTap: () => context.push(AppRoutes.orders),
         ),
         _buildGridCard(
           AppColors.gridIconGold,
@@ -339,6 +340,7 @@ class DashboardPage extends StatelessWidget {
           'Pending Orders',
           null,
           AppColors.accentGold,
+          onTap: () => context.push(AppRoutes.ordersWithStatus('pending')),
         ),
         _buildGridCard(
           AppColors.gridIconBlue,
@@ -347,6 +349,7 @@ class DashboardPage extends StatelessWidget {
           'Available Products',
           null,
           AppColors.primaryTeal,
+          onTap: () => context.push(AppRoutes.products),
         ),
         _buildGridCard(
           AppColors.gridIconPurple,
@@ -360,9 +363,16 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildGridCard(Color iconBg, IconData icon, String value, String title,
-      String? badgeText, Color accentColor) {
-    return Container(
+  Widget _buildGridCard(
+    Color iconBg,
+    IconData icon,
+    String value,
+    String title,
+    String? badgeText,
+    Color accentColor, {
+    VoidCallback? onTap,
+  }) {
+    final card = Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
           color: Colors.white,
@@ -399,6 +409,17 @@ class DashboardPage extends StatelessWidget {
               child: _buildBadge(badgeText, accentColor),
             ),
         ],
+      ),
+    );
+
+    if (onTap == null) return card;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: card,
       ),
     );
   }

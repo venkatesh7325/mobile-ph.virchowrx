@@ -1,102 +1,49 @@
 import 'package:flutter/material.dart';
-
+import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 import '../../../core/constants/app_routes.dart';
+import '../../../domain/entities/order_entity.dart';
+import '../../controllers/order_controller.dart';
+import '../../../domain/repositories/order_repository.dart';
+import '../../widgets/app_states.dart';
 import '../../widgets/simple_back_app_bar.dart';
+import 'order_delivery_live_section.dart';
+import 'order_track_otp_dialog.dart';
+import 'order_ui_model.dart';
 
-// ─────────────────────────────────────────────
-// DATA MODELS
-// ─────────────────────────────────────────────
-class OrderItem {
-  final String product;
-  final int sku;
-  final int quantity;
-  final double unitPrice;
+const _kPrimaryGreen = orderPrimaryGreen;
+const _kPendingColor = orderPendingColor;
+const _kBlueAccent = orderBlueAccent;
+const _kBgColor = orderBgColor;
+const _kBorderColor = orderBorderColor;
 
-  const OrderItem({
-    required this.product,
-    required this.sku,
-    required this.quantity,
-    required this.unitPrice,
-  });
-
-  double get total => quantity * unitPrice;
-}
-
-class OrderModel {
-  final String orderId;
-  final String poNumber;
-  final DateTime placedOn;
-  final String status;
-  final List<OrderItem> items;
-  final String? poAttachmentName;
-  final String? poAttachmentSize;
-
-  const OrderModel({
-    required this.orderId,
-    required this.poNumber,
-    required this.placedOn,
-    required this.status,
-    required this.items,
-    this.poAttachmentName,
-    this.poAttachmentSize,
-  });
-
-  double get totalAmount => items.fold(0, (s, i) => s + i.total);
-}
-
-// ─────────────────────────────────────────────
-// CONSTANTS / HELPERS
-// ─────────────────────────────────────────────
-const _kPrimaryGreen = Color(0xFF1B6E4B);
-const _kPendingColor = Color(0xFFE07B22);
-const _kBlueAccent = Color(0xFF2979D4);
-const _kBgColor = Color(0xFFF2F2F7);
-const _kBorderColor = Color(0xFFE4E4E4);
-
-String _formatDateTime(DateTime dt) {
-  const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-  ];
-  final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
-  final ampm = dt.hour >= 12 ? 'pm' : 'am';
-  final min = dt.minute.toString().padLeft(2, '0');
-  return '${dt.day} ${months[dt.month - 1]} ${dt.year}, $hour:$min $ampm';
-}
-
-String _formatINR(double val) {
-  final parts = val.toStringAsFixed(2).split('.');
-  final intStr = parts[0].replaceAllMapped(
-    RegExp(r'(\d)(?=(\d{2})+\d$)'),
-        (m) => '${m[1]},',
-  );
-  return '₹$intStr.${parts[1]}';
-}
+String _formatDateTime(DateTime dt) => formatOrderDateTime(dt);
+String _formatINR(double val) => formatOrderInr(val);
 
 // ─────────────────────────────────────────────
 // MY ORDERS SCREEN
 // ─────────────────────────────────────────────
 class MyOrdersScreen extends StatefulWidget {
-  const MyOrdersScreen({super.key});
+  final OrderStatus? initialStatusFilter;
+
+  const MyOrdersScreen({super.key, this.initialStatusFilter});
 
   @override
   State<MyOrdersScreen> createState() => _MyOrdersScreenState();
 }
 
 class _MyOrdersScreenState extends State<MyOrdersScreen> {
-  final List<OrderModel> _orders = [
-    OrderModel(
-      orderId: 'ORD-20260426-286',
-      poNumber: 'test',
-      placedOn: DateTime(2026, 4, 26, 10, 6),
-      status: 'Pending',
-      items: const [
-        OrderItem(product: 'Jusgo', sku: 52, quantity: 10, unitPrice: 110.0),
-      ],
-      poAttachmentName: 'Kamayani_Mishra_TS03_React_Native_dev.pdf',
-      poAttachmentSize: '117.8 KB · Uploaded on 26 Apr 2026, 10:06 am',
-    ),
-  ];
+  late final OrderController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = Get.find<OrderController>();
+    _controller.setStatusFilter(widget.initialStatusFilter);
+  }
+
+  List<OrderModel> get _orders =>
+      _controller.filteredOrders.map((o) => OrderModel.fromEntity(o)).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -111,7 +58,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
             padding: const EdgeInsets.only(right: 8),
             child: Center(
               child: InkWell(
-                onTap: () => setState(() {}),
+                onTap: _controller.refresh,
                 borderRadius: BorderRadius.circular(8),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -144,14 +91,61 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
       ),
       body: SafeArea(
         top: false,
-        child: ListView.builder(
-          padding: const EdgeInsets.all(14),
-          itemCount: _orders.length,
-          itemBuilder: (ctx, i) => _OrderCard(
-            order: _orders[i],
-            onViewDetails: () => _showOrderDetails(_orders[i]),
-          ),
-        ),
+        child: Obx(() {
+          if (_controller.isLoading.value && _orders.isEmpty) {
+            return const AppLoadingView();
+          }
+          if (_controller.errorMessage.value != null && _orders.isEmpty) {
+            return AppErrorView(
+              message: _controller.errorMessage.value!,
+              onRetry: _controller.refresh,
+            );
+          }
+          final filter = _controller.selectedStatus.value;
+          if (_orders.isEmpty) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (filter != null)
+                  _StatusFilterBar(
+                    label: statusLabel(filter),
+                    onClear: () => _controller.setStatusFilter(null),
+                  ),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      filter == null
+                          ? 'No orders found yet'
+                          : 'No ${statusLabel(filter).toLowerCase()} orders found',
+                      style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (filter != null)
+                _StatusFilterBar(
+                  label: statusLabel(filter),
+                  onClear: () => _controller.setStatusFilter(null),
+                ),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(14),
+                  itemCount: _orders.length,
+                  itemBuilder: (ctx, i) => _OrderCard(
+                    order: _orders[i],
+                    onViewDetails: () => _showOrderDetails(_orders[i]),
+                    onTrackOtp: () => _showTrackOtp(_orders[i]),
+                  ),
+                ),
+              ),
+            ],
+          );
+        }),
       ),
     );
   }
@@ -163,6 +157,75 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
       builder: (_) => _OrderDetailsDialog(order: order),
     );
   }
+
+  void _showTrackOtp(OrderModel order) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (_) => OrderTrackOtpDialog(order: order),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// STATUS FILTER BAR
+// ─────────────────────────────────────────────
+class _StatusFilterBar extends StatelessWidget {
+  final String label;
+  final VoidCallback onClear;
+
+  const _StatusFilterBar({required this.label, required this.onClear});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(14, 10, 14, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: _kBorderColor),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.filter_list_rounded, size: 18, color: _kPendingColor),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Showing: $label',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF333333),
+              ),
+            ),
+          ),
+          InkWell(
+            onTap: onClear,
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Clear',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: _kBlueAccent,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  Icon(Icons.close_rounded, size: 16, color: _kBlueAccent),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -171,8 +234,13 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
 class _OrderCard extends StatelessWidget {
   final OrderModel order;
   final VoidCallback onViewDetails;
+  final VoidCallback onTrackOtp;
 
-  const _OrderCard({required this.order, required this.onViewDetails});
+  const _OrderCard({
+    required this.order,
+    required this.onViewDetails,
+    required this.onTrackOtp,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -198,7 +266,8 @@ class _OrderCard extends StatelessWidget {
             runSpacing: 8,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              const _StatusBadge(),
+              _StatusBadge(status: order.status),
+              if (order.canTrackOtp) _TrackOtpButton(onTap: onTrackOtp),
               _ViewDetailsButton(onTap: onViewDetails),
             ],
           ),
@@ -223,9 +292,68 @@ class _OrderCard extends StatelessWidget {
               ],
             ),
           ),
+          if (order.trackingNumber != null && order.trackingNumber!.trim().isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Tracking: ${order.trackingNumber}',
+              style: const TextStyle(fontSize: 13, color: Color(0xFF333333)),
+            ),
+          ],
+          if (order.showOnTheWayBanner) ...[
+            const SizedBox(height: 12),
+            _OnTheWayBanner(onTap: onTrackOtp),
+          ],
           const SizedBox(height: 16),
-          const _OrderStatusTimeline(currentStep: 1, isMini: true),
+          _OrderStatusTimeline(currentStep: order.timelineStep, isMini: true),
         ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// ON THE WAY BANNER
+// ─────────────────────────────────────────────
+class _OnTheWayBanner extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _OnTheWayBanner({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFEEF6FC),
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFFB8D4F0), width: 1.1),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.local_shipping_outlined, size: 20, color: _kBlueAccent),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Order is on the way — open Track & OTP to see the live map and delivery code for the driver.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.4,
+                    color: Colors.blue.shade900.withValues(alpha: 0.85),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(Icons.chevron_right, size: 20, color: Colors.blue.shade700),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -235,24 +363,74 @@ class _OrderCard extends StatelessWidget {
 // STATUS BADGE
 // ─────────────────────────────────────────────
 class _StatusBadge extends StatelessWidget {
-  const _StatusBadge();
+  final String status;
+  const _StatusBadge({required this.status});
 
   @override
   Widget build(BuildContext context) {
+    final s = status.toLowerCase();
+    final (icon, bg) = switch (s) {
+      'delivered' => ('✓', _kPrimaryGreen),
+      'shipped' => ('🚚', const Color(0xFF6B7280)),
+      'processing' || 'approved' => ('⚙️', _kBlueAccent),
+      'cancelled' => ('❌', const Color(0xFFE53935)),
+      _ => ('⏳', _kPendingColor),
+    };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: _kPendingColor,
+        color: bg,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('⏳', style: TextStyle(fontSize: 11)),
-          SizedBox(width: 5),
-          Text('Pending',
-              style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+          Text(icon, style: const TextStyle(fontSize: 11)),
+          const SizedBox(width: 5),
+          Text(
+            status,
+            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// TRACK OTP BUTTON
+// ─────────────────────────────────────────────
+class _TrackOtpButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _TrackOtpButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: _kPrimaryGreen, width: 1.2),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.local_shipping_outlined, size: 14, color: _kPrimaryGreen),
+            SizedBox(width: 5),
+            Text(
+              'TRACK OTP',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: _kPrimaryGreen,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -414,14 +592,38 @@ class _Step {
 // ─────────────────────────────────────────────
 // ORDER DETAILS DIALOG
 // ─────────────────────────────────────────────
-class _OrderDetailsDialog extends StatelessWidget {
+class _OrderDetailsDialog extends StatefulWidget {
   final OrderModel order;
 
   const _OrderDetailsDialog({required this.order});
 
   @override
+  State<_OrderDetailsDialog> createState() => _OrderDetailsDialogState();
+}
+
+class _OrderDetailsDialogState extends State<_OrderDetailsDialog> {
+  late OrderModel _order;
+
+  @override
+  void initState() {
+    super.initState();
+    _order = widget.order;
+    _loadOrderDetails();
+  }
+
+  Future<void> _loadOrderDetails() async {
+    final repo = Get.find<OrderRepository>();
+    final result = await repo.getOrderById(_order.id);
+    if (!mounted) return;
+    result.fold((_) {}, (entity) {
+      setState(() => _order = OrderModel.fromEntity(entity));
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
+    final order = _order;
 
     return Dialog(
       backgroundColor: Colors.white,
@@ -455,7 +657,7 @@ class _OrderDetailsDialog extends StatelessWidget {
                             color: Color(0xFF111111),
                           ),
                         ),
-                        const _StatusBadge(),
+                        _StatusBadge(status: order.status),
                       ],
                     ),
                   ),
@@ -476,10 +678,24 @@ class _OrderDetailsDialog extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (order.isDeliveryTrackable) ...[
+                      OrderDeliveryLiveSection(orderId: order.id),
+                      const SizedBox(height: 12),
+                    ],
                     _SectionCard(
                       title: 'Order Status',
-                      child: const _OrderStatusTimeline(currentStep: 1),
+                      child: _OrderStatusTimeline(currentStep: order.timelineStep),
                     ),
+                    if (order.trackingNumber != null && order.trackingNumber!.trim().isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      _SectionCard(
+                        title: 'Tracking Number',
+                        child: Text(
+                          order.trackingNumber!,
+                          style: const TextStyle(fontSize: 14, color: Color(0xFF333333)),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     _SectionCard(
                       title: 'Order Items',
@@ -495,26 +711,51 @@ class _OrderDetailsDialog extends StatelessWidget {
               ),
             ),
             const Divider(height: 1, color: Color(0xFFEEEEEE)),
-            // ⚠️ Plain GestureDetector instead of TextButton — same reason:
-            //    avoid any TextButtonTheme that might force min size.
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              alignment: Alignment.centerRight,
-              child: GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  child: const Text(
-                    'CLOSE',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: _kBlueAccent,
-                      letterSpacing: 0.5,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (order.canTrackOtp)
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+                        showDialog(
+                          context: context,
+                          barrierColor: Colors.black54,
+                          builder: (_) => OrderTrackOtpDialog(order: _order),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        child: const Text(
+                          'TRACK OTP',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: _kPrimaryGreen,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      child: const Text(
+                        'CLOSE',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: _kBlueAccent,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
             ),
           ],
